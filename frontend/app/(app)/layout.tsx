@@ -27,10 +27,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (loading || !user || needsOnboarding) return <FullPageSpinner />;
 
+  // The tutor is a full-height app screen (like a chat app): the page itself never scrolls,
+  // only the panels inside it do. Every other page scrolls normally.
+  const fullHeight = pathname.startsWith("/tutor");
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={fullHeight ? "flex h-dvh flex-col overflow-hidden" : "flex min-h-screen flex-col"}>
       <Navbar />
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className={fullHeight ? "flex min-h-0 flex-1 flex-col" : "flex flex-1 flex-col"}>{children}</main>
     </div>
   );
 }

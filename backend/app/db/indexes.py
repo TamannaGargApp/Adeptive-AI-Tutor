@@ -9,6 +9,10 @@ async def create_indexes() -> None:
     await db.topics.create_index("slug", unique=True)
     await db.topics.create_index("order")
     await db.sessions.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+    await db.sessions.create_index(
+        [("user_id", ASCENDING), ("topic_slug", ASCENDING), ("mode", ASCENDING), ("updated_at", DESCENDING)]
+    )
+    await db.final_tests.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
     await db.questions.create_index([("user_id", ASCENDING), ("session_id", ASCENDING)])
     await db.attempts.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
     await db.attempts.create_index("question_id")

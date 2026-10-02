@@ -52,7 +52,7 @@ export default function ProgressCard({ progress }: { progress: TopicProgress }) 
             <span
               aria-hidden
               className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                requirement.met ? "bg-good text-white" : "border border-line text-transparent"
+                requirement.met ? "bg-good text-on-accent" : "border border-line text-transparent"
               }`}
             >
               ✓

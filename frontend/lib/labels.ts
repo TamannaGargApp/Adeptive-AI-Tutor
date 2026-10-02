@@ -50,3 +50,13 @@ export function studyLink(topicSlug: string, mode: LearningMode): string {
   if (mode !== "quiz") query.set("mode", mode);
   return `${path}?${query.toString()}`;
 }
+
+export function finalTestLink(topicSlug: string): string {
+  return `/final-test?${new URLSearchParams({ topic: topicSlug }).toString()}`;
+}
+
+/** Formats seconds as m:ss, e.g. 754 -> "12:34". */
+export function formatDuration(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.round(totalSeconds));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}

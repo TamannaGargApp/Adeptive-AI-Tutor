@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth, profile, progress, recommendations, sessions, topics, tutor
+from app.api import auth, final_tests, profile, progress, recommendations, sessions, topics, tutor
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.indexes import create_indexes
@@ -79,7 +79,7 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type", "Authorization"],
     )
 
-    for module in (auth, profile, topics, sessions, tutor, progress, recommendations):
+    for module in (auth, profile, topics, sessions, tutor, final_tests, progress, recommendations):
         app.include_router(module.router)
 
     @app.get("/api/health", tags=["health"])

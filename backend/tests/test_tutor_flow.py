@@ -137,3 +137,19 @@ async def test_quiz_feedback_shows_answer_without_hint(auth_client, fake_ai):
     assert result["hint"] is None
     assert result["correct_answer"] == "0\n1\n2"
     assert result["explanation"]
+
+
+async def test_learn_mode_resumes_the_latest_conversation(auth_client, fake_ai):
+    fake_ai.responses[LessonResponse] = LessonResponse(
+        explanation="Loops repeat code.", example_code=None, example_explanation=None, check_question=None, on_topic=True
+    )
+    first = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn", "resume": True})).json()
+    await auth_client.post("/api/tutor/learn", json={"session_id": first["id"], "message": "Hi"})
+
+    resumed = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn", "resume": True})).json()
+    fresh = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()
+
+    assert resumed["id"] == first["id"]
+    assert len(resumed["messages"]) == 2
+    assert fresh["id"] != first["id"]
+    assert fresh["messages"] == []

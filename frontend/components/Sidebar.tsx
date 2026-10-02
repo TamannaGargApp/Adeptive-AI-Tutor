@@ -11,6 +11,8 @@ interface SidebarProps {
   onTopicChange: (slug: string) => void;
   onModeChange: (mode: LearningMode) => void;
   onDifficultyChange: (difficulty: Level) => void;
+  /** On small screens the sidebar is a collapsible panel; on large screens it is always shown. */
+  mobileOpen: boolean;
 }
 
 export default function Sidebar({
@@ -21,9 +23,15 @@ export default function Sidebar({
   onTopicChange,
   onModeChange,
   onDifficultyChange,
+  mobileOpen,
 }: SidebarProps) {
   return (
-    <aside className="space-y-6 border-b border-line bg-surface p-4 lg:w-72 lg:shrink-0 lg:overflow-y-auto lg:border-r lg:border-b-0">
+    <aside
+      id="tutor-settings"
+      className={`space-y-6 border-b border-line bg-surface p-4 lg:block lg:max-h-none lg:w-72 lg:shrink-0 lg:overflow-y-auto lg:border-r lg:border-b-0 ${
+        mobileOpen ? "max-h-[45dvh] shrink-0 overflow-y-auto" : "hidden"
+      }`}
+    >
       <section>
         <h2 className="mb-2 text-sm font-bold text-ink-soft">Topic</h2>
         <label htmlFor="topic-select" className="sr-only">
@@ -69,11 +77,11 @@ export default function Sidebar({
               onClick={() => onModeChange(item)}
               aria-pressed={item === mode}
               className={`rounded-md px-3 py-2 text-left text-sm ${
-                item === mode ? "bg-blue text-white" : "border border-line hover:border-blue/50"
+                item === mode ? "bg-blue text-on-accent" : "border border-line hover:border-blue/50"
               }`}
             >
               <span className="block font-bold">{MODE_LABELS[item]}</span>
-              <span className={`hidden text-xs lg:block ${item === mode ? "text-white/80" : "text-ink-soft"}`}>
+              <span className={`hidden text-xs lg:block ${item === mode ? "text-on-accent/80" : "text-ink-soft"}`}>
                 {MODE_DESCRIPTIONS[item]}
               </span>
             </button>
@@ -91,7 +99,7 @@ export default function Sidebar({
               onClick={() => onDifficultyChange(level)}
               aria-pressed={level === difficulty}
               className={`break-words rounded-md px-1.5 py-1.5 text-center text-[11px] leading-tight font-bold ${
-                level === difficulty ? "bg-ink text-white" : "border border-line text-ink-soft hover:border-ink/40"
+                level === difficulty ? "bg-ink text-paper" : "border border-line text-ink-soft hover:border-ink/40"
               }`}
             >
               {LEVEL_LABELS[level]}

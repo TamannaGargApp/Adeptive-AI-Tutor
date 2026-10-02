@@ -17,10 +17,13 @@ function TutorWorkspace() {
   const [topics, setTopics] = useState<Topic[] | null>(null);
   const [session, setSession] = useState<LearningSession | null>(null);
   const [requestedDifficulty, setRequestedDifficulty] = useState<Level | null>(null);
-  // Bumped whenever a brand-new session is wanted for the same topic and mode.
+  // Bumped whenever a new session request is needed for the same topic and mode.
   const [sessionVersion, setSessionVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const sessionKeyRef = useRef("");
+  // Learn mode continues the previous conversation unless the learner asks for a new one.
+  const startFreshRef = useRef(false);
 
   const topicSlug = searchParams.get("topic") ?? topics?.[0]?.slug ?? "";
   const mode: LearningMode = searchParams.get("mode") === "practice" ? "practice" : "learn";
@@ -45,10 +48,11 @@ function TutorWorkspace() {
     if (sessionKeyRef.current === key) return;
     sessionKeyRef.current = key;
 
-    setSession(null);
+    const resume = mode === "learn" && !startFreshRef.current;
+    startFreshRef.current = false;
     setError(null);
     api
-      .createSession(topicSlug, mode, requestedDifficulty ?? undefined)
+      .createSession(topicSlug, mode, requestedDifficulty ?? undefined, resume)
       .then((created) => {
         // Ignore responses for a topic or mode the learner has already switched away from.
         if (sessionKeyRef.current === key) setSession(created);
@@ -60,10 +64,12 @@ function TutorWorkspace() {
 
   function changeTopic(slug: string) {
     setRequestedDifficulty(null);
+    setSettingsOpen(false);
     router.replace(studyLink(slug, mode));
   }
 
   function changeMode(nextMode: LearningMode) {
+    setSettingsOpen(false);
     if (nextMode === "quiz") router.push(studyLink(topicSlug, "quiz"));
     else router.replace(studyLink(topicSlug, nextMode));
   }
@@ -71,6 +77,12 @@ function TutorWorkspace() {
   function changeDifficulty(level: Level) {
     if (level === activeSession?.difficulty) return;
     setRequestedDifficulty(level);
+    setSessionVersion((version) => version + 1);
+  }
+
+  function startNewConversation() {
+    startFreshRef.current = true;
+    setSession(null);
     setSessionVersion((version) => version + 1);
   }
 
@@ -83,7 +95,7 @@ function TutorWorkspace() {
   }
 
   return (
-    <div className="flex flex-1 flex-col lg:h-[calc(100dvh-3.75rem)] lg:flex-row">
+    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       <Sidebar
         topics={topics}
         topicSlug={topicSlug}
@@ -92,38 +104,59 @@ function TutorWorkspace() {
         onTopicChange={changeTopic}
         onModeChange={changeMode}
         onDifficultyChange={changeDifficulty}
+        mobileOpen={settingsOpen}
       />
 
-      <section className="flex h-[78dvh] min-h-0 flex-1 flex-col lg:h-auto" aria-label="Tutor">
-        <div className="border-b border-line bg-surface px-4 py-3 sm:px-6">
-          <h1 className="text-lg font-bold">
+      <section className="flex min-h-0 flex-1 flex-col" aria-label="Tutor">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6">
+          <h1 className="min-w-0 flex-1 truncate text-lg font-bold">
             {topic?.name ?? "Tutor"} <span className="font-normal text-ink-soft">· {MODE_LABELS[mode]}</span>
           </h1>
+          {mode === "learn" && activeSession && (
+            <button type="button" className="btn btn-secondary px-3 py-1.5 text-sm" onClick={startNewConversation}>
+              New conversation
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary px-3 py-1.5 text-sm lg:hidden"
+            aria-expanded={settingsOpen}
+            aria-controls="tutor-settings"
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            {settingsOpen ? "Close" : "Settings"}
+          </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {error && (
-            <div className="space-y-3 p-6">
-              <Alert>{error}</Alert>
-              <button type="button" className="btn btn-secondary" onClick={() => setSessionVersion((v) => v + 1)}>
-                Try again
-              </button>
-            </div>
-          )}
-          {!activeSession && !error && (
-            <div className="p-6">
-              <Spinner label="Setting up your session…" />
-            </div>
-          )}
-          {activeSession?.mode === "learn" && <ChatWindow key={activeSession.id} session={activeSession} />}
-          {activeSession?.mode === "practice" && (
+        {error && (
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-6">
+            <Alert>{error}</Alert>
+            <button type="button" className="btn btn-secondary" onClick={() => setSessionVersion((v) => v + 1)}>
+              Try again
+            </button>
+          </div>
+        )}
+        {!activeSession && !error && (
+          <div className="p-6">
+            <Spinner label="Setting up your session…" />
+          </div>
+        )}
+
+        {/* The chat manages its own scrolling so the message box stays pinned to the bottom. */}
+        {!error && activeSession?.mode === "learn" && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ChatWindow key={activeSession.id} session={activeSession} />
+          </div>
+        )}
+        {!error && activeSession?.mode === "practice" && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <PracticePanel
               key={activeSession.id}
               session={activeSession}
               onDifficultyChange={applyAdaptiveDifficulty}
             />
-          )}
-        </div>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -11,6 +11,8 @@ class SessionCreate(BaseModel):
     mode: LearningMode
     # When omitted, the learner's adaptive difficulty for this topic is used.
     difficulty: Level | None = None
+    # Learn mode only: continue the most recent conversation for this topic instead of starting fresh.
+    resume: bool = False
 
 
 class SessionOut(BaseModel):

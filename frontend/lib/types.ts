@@ -142,3 +142,50 @@ export interface OverallProgress {
   topics_completed: number;
   topics: TopicProgress[];
 }
+
+export interface ConceptScore {
+  concept: string;
+  correct: number;
+  total: number;
+}
+
+export interface QuestionReview {
+  question_id: string;
+  prompt: string;
+  code: string | null;
+  options: string[];
+  question_type: QuestionType;
+  concept: string;
+  your_answer: string;
+  correct_answer: string;
+  explanation: string;
+  correct: boolean;
+}
+
+export interface FinalTestResult {
+  correct: number;
+  total: number;
+  accuracy: number;
+  time_taken_seconds: number;
+  finished_by: "submitted" | "time_up";
+  concept_scores: ConceptScore[];
+  strong_areas: string[];
+  needs_practice: string[];
+  remarks: string[];
+  review: QuestionReview[];
+}
+
+export interface FinalTest {
+  id: string;
+  topic_slug: string;
+  topic_name: string;
+  difficulty: Level;
+  questions: Question[];
+  answers: Record<string, string>;
+  time_limit_seconds: number;
+  seconds_remaining: number;
+  started_at: string;
+  submitted: boolean;
+  result: FinalTestResult | null;
+  recommendation: Recommendation | null;
+}

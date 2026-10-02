@@ -17,6 +17,7 @@ class LearningMode(StrEnum):
     LEARN = "learn"
     PRACTICE = "practice"
     QUIZ = "quiz"
+    FINAL_TEST = "final_test"
 
 
 class QuestionType(StrEnum):
@@ -41,4 +42,4 @@ class CompletionStatus(StrEnum):
     COMPLETE = "complete"
 
 
-DIFFICULTY_ORDER: list[Level] = [Level.BEGINNER, Level.INTERMEDIATE, Level.ADVANCED]    
+DIFFICULTY_ORDER: list[Level] = [Level.BEGINNER, Level.INTERMEDIATE, Level.ADVANCED]

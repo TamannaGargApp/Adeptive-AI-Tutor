@@ -54,6 +54,14 @@ INITIAL_TOPICS: list[dict] = [
         "description": "Handle errors gracefully with try, except, else and finally.",
         "key_concepts": ["try and except", "specific exception types", "else and finally", "raising exceptions", "common errors"],
     },
+    # New topics are appended: existing topics keep their stored order, so inserting one in the
+    # middle of this list would give it the same order number as an existing topic.
+    {
+        "slug": "file-handling",
+        "name": "File Handling",
+        "description": "Read and write text files safely with open() and the with statement.",
+        "key_concepts": ["opening files", "file modes", "reading files", "writing files", "with statement", "handling file errors"],
+    },
 ]
 
 

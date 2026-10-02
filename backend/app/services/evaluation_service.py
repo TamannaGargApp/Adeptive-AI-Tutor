@@ -8,7 +8,7 @@ for those, and grades short-answer questions where exact matching isn't possible
 import logging
 from collections.abc import Iterable
 
-from app.core.exceptions import AIServiceError, ConflictError
+from app.core.exceptions import AIServiceError, AppError, ConflictError
 from app.models.enums import LearningMode, QuestionType
 from app.models.question import Question
 from app.models.user import User
@@ -107,6 +107,10 @@ async def evaluate_submission(user: User, request: EvaluateRequest, ai: Structur
 
 
 def _ensure_can_answer(question: Question) -> None:
+    # Final test answers stay hidden until the whole test is submitted, so they are graded
+    # only by final_test_service, never one by one here.
+    if question.mode == LearningMode.FINAL_TEST:
+        raise AppError("Final test answers are graded when you submit the test.")
     if question.mode == LearningMode.QUIZ and question.attempt_count > 0:
         raise ConflictError("You've already answered this quiz question.")
     if question.solved:
@@ -123,7 +127,7 @@ async def _get_ai_feedback(
     reveal: bool,
 ) -> EvaluationResponse:
     session = await session_service.get_session(user.id, question.session_id)
-    context = await tutor_service.build_learner_context(user, session)
+    context = await tutor_service.build_learner_context(user, session.topic_slug, session.difficulty, session.mode)
     try:
         return await ai.generate_structured(
             system_prompt=build_system_prompt(context),

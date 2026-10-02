@@ -19,9 +19,17 @@ export const metadata: Metadata = {
   description: "Learn Python through personalized explanations, practice, quizzes, and intelligent feedback.",
 };
 
+// Runs before the page is painted, so a saved dark theme never flashes light first.
+// With no saved choice, the CSS follows the device's light/dark setting.
+const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${atkinson.variable} ${jetbrains.variable}`}>
+    // suppressHydrationWarning: the theme script may set data-theme before React loads.
+    <html lang="en" className={`${atkinson.variable} ${jetbrains.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>

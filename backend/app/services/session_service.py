@@ -10,7 +10,19 @@ from app.services import progress_service, topic_service
 
 
 async def create_session(user: User, data: SessionCreate) -> LearningSession:
+    """Start a session, or continue the latest Learn conversation when `resume` is requested."""
+    if data.mode == LearningMode.FINAL_TEST:
+        raise AppError("Final tests are started from the final test page.")
     await topic_service.get_topic(data.topic_slug)
+
+    if data.resume and data.mode == LearningMode.LEARN:
+        latest = await get_latest_learn_session(user.id, data.topic_slug)
+        if latest is not None:
+            if data.difficulty and data.difficulty != latest.difficulty:
+                await update_difficulty(latest.id, data.difficulty)
+                latest = latest.model_copy(update={"difficulty": data.difficulty})
+            return latest
+
     difficulty = data.difficulty or await progress_service.get_current_difficulty(user, data.topic_slug)
 
     now = datetime.now(UTC)
@@ -27,6 +39,14 @@ async def create_session(user: User, data: SessionCreate) -> LearningSession:
     result = await get_database().sessions.insert_one(document)
     document["_id"] = result.inserted_id
     return LearningSession.from_document(document)
+
+
+async def get_latest_learn_session(user_id: str, topic_slug: str) -> LearningSession | None:
+    document = await get_database().sessions.find_one(
+        {"user_id": user_id, "topic_slug": topic_slug, "mode": LearningMode.LEARN.value},
+        sort=[("updated_at", -1)],
+    )
+    return LearningSession.from_document(document) if document else None
 
 
 async def get_session(user_id: str, session_id: str) -> LearningSession:

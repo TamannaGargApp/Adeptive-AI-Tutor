@@ -126,6 +126,14 @@ Cover different key concepts and mix the question types.
 {QUESTION_TYPES_GUIDE}{_avoid_repeats_section(recent_prompts)}"""
 
 
+def build_final_test_prompt(question_count: int, recent_prompts: list[str]) -> str:
+    return f"""Create a final test of exactly {question_count} questions on the current topic at the current difficulty.
+It should check the whole topic: cover every key concept at least once, mixing easier and harder questions.
+Use ONLY "multiple_choice" and "predict_output" question types, because answers are graded automatically
+at the end of the test.
+{QUESTION_TYPES_GUIDE}{_avoid_repeats_section(recent_prompts)}"""
+
+
 def build_evaluation_prompt(
     question: Question, answer: str, known_correct: bool | None, attempt_number: int, reveal_answer: bool
 ) -> str:

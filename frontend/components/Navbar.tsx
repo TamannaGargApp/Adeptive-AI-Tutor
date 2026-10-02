@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Logo";
+import { useAuth } from "@/lib/auth";
+
+import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/topics", label: "Topics" },
   { href: "/tutor", label: "Tutor" },
   { href: "/quiz", label: "Quiz" },
+  { href: "/final-test", label: "Final test" },
   { href: "/progress", label: "Progress" },
 ];
 
@@ -52,6 +55,7 @@ export default function Navbar() {
         )}
 
         <div className="ml-auto flex items-center gap-3 text-sm">
+          <ThemeToggle />
           {user && <span className="hidden text-ink-soft md:inline">{user.name}</span>}
           <button type="button" onClick={handleLogout} className="font-bold text-blue hover:text-blue-deep">
             Log out

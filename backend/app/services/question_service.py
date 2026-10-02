@@ -3,20 +3,29 @@ from datetime import UTC, datetime
 from app.core.exceptions import NotFoundError
 from app.db.mongodb import get_database, to_object_id
 from app.models.question import Question
-from app.models.session import LearningSession
+from app.models.enums import LearningMode, Level
 from app.schemas.tutor import QuestionResponse
 
 
-async def save_questions(session: LearningSession, generated: list[QuestionResponse]) -> list[Question]:
+async def save_questions(
+    *,
+    user_id: str,
+    session_id: str,
+    topic_slug: str,
+    mode: LearningMode,
+    difficulty: Level,
+    generated: list[QuestionResponse],
+) -> list[Question]:
+    """Store generated questions. `session_id` is the practice/quiz session or the final test id."""
     now = datetime.now(UTC)
     documents = [
         {
             **item.model_dump(),
-            "user_id": session.user_id,
-            "session_id": session.id,
-            "topic_slug": session.topic_slug,
-            "mode": session.mode.value,
-            "difficulty": session.difficulty.value,
+            "user_id": user_id,
+            "session_id": session_id,
+            "topic_slug": topic_slug,
+            "mode": mode.value,
+            "difficulty": difficulty.value,
             "attempt_count": 0,
             "solved": False,
             "created_at": now,

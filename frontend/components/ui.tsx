@@ -67,7 +67,7 @@ export function CompletionBar({ percent, label = "Completion" }: { percent: numb
 
 export function CodeBlock({ code }: { code: string }) {
   return (
-    <pre className="overflow-x-auto rounded-lg bg-ink px-4 py-3 font-mono text-sm leading-relaxed text-white">
+    <pre className="overflow-x-auto rounded-lg bg-code px-4 py-3 font-mono text-sm leading-relaxed text-code-fg">
       <code>{code}</code>
     </pre>
   );

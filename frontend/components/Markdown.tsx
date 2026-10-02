@@ -7,7 +7,7 @@ export default function Markdown({ content }: { content: string }) {
       <ReactMarkdown
         components={{
           pre: ({ children }) => (
-            <pre className="overflow-x-auto rounded-lg bg-ink px-4 py-3 font-mono text-sm leading-relaxed text-white">
+            <pre className="overflow-x-auto rounded-lg bg-code px-4 py-3 font-mono text-sm leading-relaxed text-code-fg">
               {children}
             </pre>
           ),

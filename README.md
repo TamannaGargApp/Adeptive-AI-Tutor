@@ -11,15 +11,59 @@ off-topic requests are politely redirected.
 
 - **Accounts**: registration, login, logout, Argon2 password hashing, JWT in an httpOnly cookie.
 - **Onboarding**: name, Python level, learning goal, preferred difficulty.
-- **Dashboard**: questions attempted, correct answers, accuracy, per-topic mastery, recommended next topic.
+- **Dashboard**: course completion, questions attempted, correct answers, accuracy, completion and status
+  for every topic, and a recommended next topic.
 - **Learn mode**: chat-style lessons: explanation, example, walkthrough of the example, and a check question.
+  Conversations are saved and resumed per topic, with a "New conversation" option.
 - **Practice mode**: one question at a time; wrong answers get feedback and a hint. The answer is revealed
   after 3 attempts.
 - **Quiz mode**: 5 generated questions, one attempt each, final score, strong areas, areas to practice,
   and a recommendation.
+- **Final test**: 10 questions per topic with a 15-minute timer. Answers autosave and stay hidden until
+  you submit (or time runs out), then a full analysis shows score, time, per-concept results, and a
+  review of every question.
+- **Topic completion standard**: 100% when you've answered at least 10 questions, got 9 of your last 10
+  right, and answered every key concept correctly, with remarks on what's left.
 - **Progress tracking**: accuracy, mastery level, strengths and weaknesses by concept.
+- **Light, dark, and system themes**, remembered per browser.
 - **Adaptive difficulty**: 3 correct in a row moves up a level; 2 misses in the last 3 moves down.
 - **Recommendations**: deterministic rules (review weak topics → continue the course → strengthen → challenge).
+
+## Course content
+
+The course has 9 Python topics, each with its own key concepts:
+
+| # | Topic | Key concepts |
+| --- | --- | --- |
+| 1 | Variables & Data Types | variable assignment, int and float, strings, booleans, `type()`, type conversion |
+| 2 | Operators | arithmetic, integer division and modulo, comparison, logical, operator precedence |
+| 3 | Conditional Statements | `if`, `elif` chains, `else`, nested conditions, truthiness |
+| 4 | Loops | `for` loop, `range()`, `while` loop, `break` and `continue`, nested loops |
+| 5 | Functions | defining functions, parameters and arguments, return values, default arguments, scope |
+| 6 | Lists & Tuples | indexing, slicing, list methods, mutability, tuples, iterating over lists |
+| 7 | Dictionaries & Sets | creating dictionaries, accessing keys, dictionary methods, iteration, sets, set operations |
+| 8 | Exception Handling | `try`/`except`, specific exception types, `else` and `finally`, raising exceptions, common errors |
+| 9 | File Handling | opening files, file modes, reading files, writing files, `with` statement, handling file errors |
+
+Topics live in the `topics` collection and are seeded from `backend/app/db/seed.py` on startup.
+**To add a topic**, append it to the end of `INITIAL_TOPICS` and restart the backend. Nothing else in
+the code needs to change. Append rather than insert: existing topics keep their stored order number,
+so a topic inserted mid-list would share a number with an existing one.
+
+### How topic completion works
+
+A topic is **100% complete** when all three requirements are met:
+
+| Requirement | Share of the percentage |
+| --- | --- |
+| Answer at least 10 questions (first attempts in Practice, Quiz, or Final test) | 20% |
+| Get 9 of your last 10 answers right | 40% |
+| Answer every key concept correctly at least once | 40% |
+
+Partial progress counts toward each share, and the percentage never shows 100% until every requirement
+is fully met. Each topic also gets a status (Not started, Needs more practice, In progress, Almost
+complete, Complete) and remarks that say exactly what's left. The thresholds are constants at the top
+of the completion section in `progress_service.py`.
 
 ## Architecture
 
@@ -50,6 +94,23 @@ Key design decisions:
   collection until the backend decides to reveal them.
 - **Only first attempts count toward accuracy.** Retries are stored in `attempts` but don't inflate stats.
 - **Recommendations are rule-based**, so they are predictable and testable.
+- **Final tests reveal nothing early.** Their questions can't be checked through the normal evaluate
+  endpoint. Answers are autosaved and graded together on submit, or automatically once the time runs
+  out, even if the browser was closed.
+- **Themes use CSS variables.** Components use colour tokens (`ink`, `surface`, `blue`, …) that switch
+  values in dark mode, so no component needs dark-specific classes.
+
+### MongoDB collections
+
+| Collection | Contents |
+| --- | --- |
+| `users` | Accounts and onboarding profile (password stored only as an Argon2 hash) |
+| `topics` | Course topics and their key concepts |
+| `sessions` | Learn, Practice, and Quiz sessions; Learn chat history is stored here |
+| `questions` | Every generated question, including its correct answer (never sent early) |
+| `attempts` | Every answer submitted, including retries |
+| `topic_progress` | Per-learner, per-topic stats used for mastery, completion, and difficulty |
+| `final_tests` | Timed final tests: questions, autosaved answers, timing, and the result analysis |
 
 ## Technology stack
 
@@ -73,20 +134,32 @@ adaptive-ai-tutor/
 │   ├── .env.example
 │   ├── app/
 │   │   ├── main.py             # app factory, lifespan, error handling, CORS
-│   │   ├── api/                # auth, profile, topics, sessions, tutor, progress, recommendations
+│   │   ├── api/                # thin routes: auth, profile, topics, sessions, tutor, final_tests,
+│   │   │                       #   progress, recommendations
 │   │   ├── core/               # config, security (hashing + JWT), dependencies, exceptions
 │   │   ├── db/                 # mongodb connection, indexes, topic seed data
 │   │   ├── models/             # shapes of documents stored in MongoDB
 │   │   ├── schemas/            # API request/response and AI output schemas
-│   │   ├── services/           # business logic (one service per responsibility)
+│   │   ├── services/
+│   │   │   ├── ai_service.py               # the only code that calls Gemini (retries, fallback, timeouts)
+│   │   │   ├── tutor_service.py            # Learn lessons, practice questions, quizzes
+│   │   │   ├── evaluation_service.py       # grading and feedback for practice and quiz answers
+│   │   │   ├── final_test_service.py       # timed tests, autosave, grading, analysis
+│   │   │   ├── progress_service.py         # accuracy, mastery, completion standard, difficulty
+│   │   │   ├── recommendation_service.py   # what to study next
+│   │   │   └── user/topic/session/question services  # one per collection
 │   │   └── prompts/            # tutor system prompt and prompt builders
 │   └── tests/                  # pytest suite (Gemini is always mocked)
 └── frontend/
     ├── app/
+    │   ├── layout.tsx          # fonts, theme script, auth provider
+    │   ├── globals.css         # colour tokens for light and dark themes
     │   ├── page.tsx            # landing page
     │   ├── (auth)/             # /login, /register
-    │   └── (app)/              # signed-in pages: onboarding, dashboard, topics, tutor, quiz, progress
-    ├── components/             # Navbar, Sidebar, ChatWindow, PracticePanel, QuizQuestion, cards, ui
+    │   └── (app)/              # signed-in pages: onboarding, dashboard, topics, tutor, quiz,
+    │                           #   final-test, progress
+    ├── components/             # Navbar, Logo, ThemeToggle, Sidebar, ChatWindow, PracticePanel,
+    │                           #   QuizQuestion, FinalTestRunner, FinalTestResults, cards, ui
     └── lib/                    # api client, auth context, types, labels
 ```
 
@@ -104,7 +177,7 @@ adaptive-ai-tutor/
 ## Local MongoDB setup
 
 The app expects MongoDB at `mongodb://localhost:27017` and creates the `ai_tutor` database, indexes, and
-the 8 Python topics automatically on first start.
+the 9 Python topics automatically on first start.
 
 **Windows**: install MongoDB Community Server with the MSI installer and keep "Install MongoDB as a
 Service" checked. It then starts automatically. To check it's running, open PowerShell:
@@ -199,13 +272,17 @@ too. API clients can alternatively send `Authorization: Bearer <token>`.
 | GET | `/api/auth/me` | Current user |
 | GET / PUT | `/api/profile` | Read / save onboarding profile |
 | GET | `/api/topics` | All topics, in course order |
-| POST | `/api/sessions` | Start a learn / practice / quiz session |
+| POST | `/api/sessions` | Start a learn / practice / quiz session (`resume: true` continues the last Learn chat) |
 | GET | `/api/sessions/{id}` | Session with chat history |
 | POST | `/api/tutor/learn` | Send a message in Learn mode (empty message starts the lesson) |
 | POST | `/api/tutor/practice` | Generate one practice question |
 | POST | `/api/tutor/evaluate` | Grade an answer, update progress |
 | POST | `/api/tutor/quiz` | Generate a 5-question quiz for a quiz session |
 | GET | `/api/tutor/quiz/{session_id}/result` | Quiz score, strong areas, needs practice, recommendation |
+| POST | `/api/final-tests` | Start a timed final test for a topic |
+| GET | `/api/final-tests/{id}` | Load a test (auto-graded if its time ran out) |
+| PUT | `/api/final-tests/{id}/answers` | Autosave one answer |
+| POST | `/api/final-tests/{id}/submit` | Submit, grade, and return the analysis |
 | GET | `/api/progress` | Overall and per-topic progress |
 | GET | `/api/progress/{topic_slug}` | One topic's progress |
 | GET | `/api/recommendations` | What to study next |
@@ -248,10 +325,17 @@ cd backend
 uv run pytest
 ```
 
-Covered: registration, duplicate email, password hashing, login, invalid login, logout, protected
-endpoints, invalid tokens, topic retrieval, progress calculation, mastery thresholds, difficulty
-adjustment, deterministic grading, recommendations, Learn mode, practice evaluation (including the
-fallback when the AI is unavailable), and a full quiz flow.
+Covered:
+
+- **Auth:** registration, duplicate email, password hashing, login, invalid login, logout, protected
+  endpoints, invalid tokens.
+- **Learning:** topic retrieval, Learn mode replies and resuming a conversation, practice evaluation
+  (including the fallback when the AI is unavailable), a full quiz flow, and quiz feedback without hints.
+- **Final test:** answers hidden until submit, grading and analysis, no one-by-one checking, double
+  submit counted once, and automatic grading after the time runs out.
+- **Progress:** accuracy, mastery thresholds, difficulty adjustment, deterministic grading, the topic
+  completion standard and its remarks, and recommendations.
+- **AI service:** fallback to the second model, skipping a busy model, timeouts, and a rejected API key.
 
 Frontend type check:
 
@@ -274,9 +358,10 @@ npm run typecheck
 ## Future enhancements
 
 - Smarter adaptive difficulty (per-concept, spaced repetition)
+- A course-wide final exam across all topics
 - RAG over course notes or documentation
 - PDF upload to learn from your own material
-- Learning history: browse past sessions and questions
+- History pages: browse past Learn conversations and final test results
 - Progress charts over time
 - Badges and learning streaks
 - Personalized study plans

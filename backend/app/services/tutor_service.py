@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from app.models.enums import LearningMode
+from app.models.enums import LearningMode, Level
 from app.models.question import Question
 from app.models.session import ChatMessage, LearningSession
 from app.models.user import User
@@ -23,10 +23,12 @@ QUIZ_LENGTH = 5
 LESSON_HISTORY_LIMIT = 12
 
 
-async def build_learner_context(user: User, session: LearningSession) -> LearnerContext:
-    topic = await topic_service.get_topic(session.topic_slug)
-    progress = await progress_service.get_topic_progress(user.id, session.topic_slug)
-    summary = progress_service.to_topic_progress_out(topic, progress, session.difficulty)
+async def build_learner_context(
+    user: User, topic_slug: str, difficulty: Level, mode: LearningMode
+) -> LearnerContext:
+    topic = await topic_service.get_topic(topic_slug)
+    progress = await progress_service.get_topic_progress(user.id, topic_slug)
+    summary = progress_service.to_topic_progress_out(topic, progress, difficulty)
     return LearnerContext(
         student_name=user.name,
         level=(user.level or "beginner"),
@@ -34,8 +36,8 @@ async def build_learner_context(user: User, session: LearningSession) -> Learner
         topic_name=topic.name,
         topic_description=topic.description,
         key_concepts=topic.key_concepts,
-        difficulty=session.difficulty.value,
-        mode=session.mode.value,
+        difficulty=difficulty.value,
+        mode=mode.value.replace("_", " "),
         questions_attempted=summary.questions_attempted,
         accuracy=summary.accuracy,
         mastery=summary.mastery.value.replace("_", " "),
@@ -47,7 +49,7 @@ async def build_learner_context(user: User, session: LearningSession) -> Learner
 
 async def teach(user: User, session_id: str, message: str, ai: StructuredLLM) -> LearnReply:
     session = await session_service.get_session_in_mode(user.id, session_id, LearningMode.LEARN)
-    context = await build_learner_context(user, session)
+    context = await build_learner_context(user, session.topic_slug, session.difficulty, session.mode)
     message = message.strip()
 
     lesson = await ai.generate_structured(
@@ -83,7 +85,7 @@ def align_concept(generated: QuestionResponse, key_concepts: list[str]) -> None:
 
 async def generate_practice_question(user: User, session_id: str, ai: StructuredLLM) -> Question:
     session = await session_service.get_session_in_mode(user.id, session_id, LearningMode.PRACTICE)
-    context = await build_learner_context(user, session)
+    context = await build_learner_context(user, session.topic_slug, session.difficulty, session.mode)
     recent_prompts = await question_service.get_recent_prompts(user.id, session.topic_slug)
 
     progress = await progress_service.get_topic_progress(user.id, session.topic_slug)
@@ -96,7 +98,14 @@ async def generate_practice_question(user: User, session_id: str, ai: Structured
         response_model=QuestionResponse,
     )
     align_concept(generated, context.key_concepts)
-    [question] = await question_service.save_questions(session, [generated])
+    [question] = await question_service.save_questions(
+        user_id=user.id,
+        session_id=session.id,
+        topic_slug=session.topic_slug,
+        mode=session.mode,
+        difficulty=session.difficulty,
+        generated=[generated],
+    )
     return question
 
 
@@ -107,7 +116,7 @@ async def generate_quiz(user: User, session_id: str, ai: StructuredLLM) -> tuple
     if session.quiz_question_ids:
         return session, await question_service.get_questions(user.id, session.quiz_question_ids)
 
-    context = await build_learner_context(user, session)
+    context = await build_learner_context(user, session.topic_slug, session.difficulty, session.mode)
     recent_prompts = await question_service.get_recent_prompts(user.id, session.topic_slug)
     quiz = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
@@ -116,6 +125,13 @@ async def generate_quiz(user: User, session_id: str, ai: StructuredLLM) -> tuple
     )
     for generated in quiz.questions:
         align_concept(generated, context.key_concepts)
-    questions = await question_service.save_questions(session, quiz.questions[:QUIZ_LENGTH])
+    questions = await question_service.save_questions(
+        user_id=user.id,
+        session_id=session.id,
+        topic_slug=session.topic_slug,
+        mode=session.mode,
+        difficulty=session.difficulty,
+        generated=quiz.questions[:QUIZ_LENGTH],
+    )
     await session_service.set_quiz_questions(session.id, [question.id for question in questions])
     return session, questions

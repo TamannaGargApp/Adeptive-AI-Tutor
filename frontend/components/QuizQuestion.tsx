@@ -14,6 +14,8 @@ interface QuizQuestionProps {
   /** True once the question can no longer be answered (solved, or out of attempts). */
   locked: boolean;
   result: EvaluationResult | null;
+  /** False in the final test, where answers are only checked when the whole test is submitted. */
+  showSubmit?: boolean;
 }
 
 const INPUT_LABELS = {
@@ -30,6 +32,7 @@ export default function QuizQuestion({
   submitting,
   locked,
   result,
+  showSubmit = true,
 }: QuizQuestionProps) {
   const canSubmit = answer.trim().length > 0 && !submitting && !locked;
   const inputId = `answer-${question.id}`;
@@ -101,7 +104,7 @@ export default function QuizQuestion({
           </div>
         )}
 
-        {!locked && (
+        {showSubmit && !locked && (
           <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
             {submitting ? "Checking…" : result && !result.correct ? "Check again" : "Check answer"}
           </button>

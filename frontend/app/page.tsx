@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 
-import { useAuth } from "@/lib/auth";
 import { LogoMark } from "@/components/Logo";
+import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/lib/auth";
 
 const MODES = [
   {
@@ -35,16 +36,19 @@ export default function LandingPage() {
           <span className="flex items-center">
             <LogoMark height={44} />
           </span>
-          {!loading && !user && (
-            <div className="flex items-center gap-3">
-              <Link href="/login" className="font-bold text-blue hover:text-blue-deep">
-                Login
-              </Link>
-              <Link href="/register" className="btn btn-primary px-4 py-2 text-sm">
-                Get Started
-              </Link>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {!loading && !user && (
+              <>
+                <Link href="/login" className="font-bold text-blue hover:text-blue-deep">
+                  Login
+                </Link>
+                <Link href="/register" className="btn btn-primary px-4 py-2 text-sm">
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -80,25 +84,26 @@ export default function LandingPage() {
             <p className="mt-4 text-sm text-ink-soft">Free to start · No credit card required</p>
           </section>
 
-          {/* The hero shows the product's core behaviour: a wrong answer meets a hint, not the solution. */}
+          {/* The hero shows the product's core behaviour: a wrong answer meets a hint, not the solution.
+              It uses the code-block colours, which stay dark in both light and dark themes. */}
           <section
             aria-label="Example of the tutor giving a hint"
-            className="overflow-hidden rounded-2xl bg-ink shadow-xl shadow-ink/10 ring-1 ring-ink/5"
+            className="overflow-hidden rounded-2xl bg-code shadow-xl shadow-black/15 ring-1 ring-line"
           >
-            <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-3">
+            <div className="flex items-center gap-1.5 border-b border-code-fg/10 px-4 py-3">
               <span className="h-2.5 w-2.5 rounded-full bg-bad/70" />
               <span className="h-2.5 w-2.5 rounded-full bg-sun/70" />
               <span className="h-2.5 w-2.5 rounded-full bg-good/70" />
             </div>
             <div className="space-y-4 p-5 font-mono text-sm sm:p-6">
-              <p className="text-white/60"># What will this print?</p>
-              <pre className="text-white">
+              <p className="text-code-fg/60"># What will this print?</p>
+              <pre className="text-code-fg">
                 <span className="text-sun">for</span> i <span className="text-sun">in</span> range(3):{"\n"}
                 {"    "}print(i)
               </pre>
-              <div className="rounded-lg border border-white/15 px-4 py-3">
-                <p className="text-white/60">Your answer</p>
-                <p className="text-white">1 2 3</p>
+              <div className="rounded-lg border border-code-fg/15 px-4 py-3">
+                <p className="text-code-fg/60">Your answer</p>
+                <p className="text-code-fg">1 2 3</p>
               </div>
             </div>
             <div className="border-t-4 border-sun bg-sun-tint px-5 py-4 sm:px-6">
@@ -120,10 +125,7 @@ export default function LandingPage() {
           </div>
           <div className="mt-8 grid gap-5 sm:grid-cols-3">
             {MODES.map((mode) => (
-              <div
-                key={mode.name}
-                className="panel p-5 transition-shadow hover:shadow-md hover:shadow-ink/5"
-              >
+              <div key={mode.name} className="panel p-5 transition-shadow hover:shadow-md hover:shadow-black/10">
                 <div className="grid h-10 w-10 place-items-center rounded-lg bg-blue-tint text-blue-deep" aria-hidden>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     {mode.icon}

@@ -19,9 +19,89 @@
   --color-good-tint: #e2f2e8;
   --color-bad: #b4441b;
   --color-bad-tint: #fbe8df;
+  /* Text on blue/green accent backgrounds, and code blocks (dark in both themes). */
+  --color-on-accent: #ffffff;
+  --color-code: #17212b;
+  --color-code-fg: #f4f7fa;
 
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+/*
+  Dark theme. Applied when the learner picks Dark, or picks System (no data-theme attribute)
+  and their device prefers dark. Both blocks list the same values on purpose: CSS can't share
+  one block between an attribute selector and a media query.
+*/
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ink: #e6edf3;
+  --color-ink-soft: #9fadba;
+  --color-paper: #0e1419;
+  --color-surface: #161f27;
+  --color-line: #2b3743;
+  --color-blue: #5b98d1;
+  --color-blue-deep: #a9cdf0;
+  --color-blue-tint: #1a2b3c;
+  --color-sun-tint: #352f12;
+  --color-good: #57c993;
+  --color-good-tint: #12281d;
+  --color-bad: #f0875a;
+  --color-bad-tint: #37190f;
+  --color-on-accent: #0e1419;
+  --color-code: #0a0f13;
+  --color-code-fg: #e6edf3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-ink: #e6edf3;
+    --color-ink-soft: #9fadba;
+    --color-paper: #0e1419;
+    --color-surface: #161f27;
+    --color-line: #2b3743;
+    --color-blue: #5b98d1;
+    --color-blue-deep: #a9cdf0;
+    --color-blue-tint: #1a2b3c;
+    --color-sun-tint: #352f12;
+    --color-good: #57c993;
+    --color-good-tint: #12281d;
+    --color-bad: #f0875a;
+    --color-bad-tint: #37190f;
+    --color-on-accent: #0e1419;
+    --color-code: #0a0f13;
+    --color-code-fg: #e6edf3;
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+/*
+  Logo swap: the dark-background mark is hidden by default, and shown instead of the light
+  mark under the same conditions globals.css uses for dark colors above (explicit dark, or
+  System with the device preferring dark).
+*/
+.logo-dark-mark {
+  display: none;
+}
+
+:root[data-theme="dark"] .logo-light-mark {
+  display: none;
+}
+:root[data-theme="dark"] .logo-dark-mark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-light-mark {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .logo-dark-mark {
+    display: block;
+  }
 }
 
 html {
@@ -65,7 +145,7 @@ body {
   }
   .btn-primary {
     background: var(--color-blue);
-    color: white;
+    color: var(--color-on-accent);
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--color-blue-deep);

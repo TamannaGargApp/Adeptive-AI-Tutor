@@ -1,5 +1,6 @@
 import type {
   EvaluationResult,
+  FinalTest,
   LearnReply,
   LearningMode,
   LearningSession,
@@ -108,10 +109,10 @@ export const api = {
 
   getTopics: () => request<Topic[]>("/api/topics"),
 
-  createSession: (topicSlug: string, mode: LearningMode, difficulty?: Level) =>
+  createSession: (topicSlug: string, mode: LearningMode, difficulty?: Level, resume = false) =>
     request<LearningSession>("/api/sessions", {
       method: "POST",
-      body: { topic_slug: topicSlug, mode, difficulty: difficulty ?? null },
+      body: { topic_slug: topicSlug, mode, difficulty: difficulty ?? null, resume },
     }),
   getSession: (sessionId: string) => request<LearningSession>(`/api/sessions/${sessionId}`),
 
@@ -136,6 +137,17 @@ export const api = {
   createQuiz: (sessionId: string) =>
     request<Quiz>("/api/tutor/quiz", { method: "POST", body: { session_id: sessionId }, timeoutMs: AI_TIMEOUT_MS }),
   getQuizResult: (sessionId: string) => request<QuizResult>(`/api/tutor/quiz/${sessionId}/result`),
+
+  startFinalTest: (topicSlug: string) =>
+    request<FinalTest>("/api/final-tests", { method: "POST", body: { topic_slug: topicSlug }, timeoutMs: AI_TIMEOUT_MS }),
+  getFinalTest: (testId: string) => request<FinalTest>(`/api/final-tests/${testId}`),
+  saveFinalTestAnswer: (testId: string, questionId: string, answer: string) =>
+    request<{ message: string }>(`/api/final-tests/${testId}/answers`, {
+      method: "PUT",
+      body: { question_id: questionId, answer },
+    }),
+  submitFinalTest: (testId: string, answers: Record<string, string>) =>
+    request<FinalTest>(`/api/final-tests/${testId}/submit`, { method: "POST", body: { answers } }),
 
   getProgress: () => request<OverallProgress>("/api/progress"),
   getTopicProgress: (topicSlug: string) => request<TopicProgress>(`/api/progress/${topicSlug}`),

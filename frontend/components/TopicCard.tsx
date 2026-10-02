@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { MODE_LABELS, MODES, studyLink } from "@/lib/labels";
+import { finalTestLink, MODE_LABELS, MODES, studyLink } from "@/lib/labels";
 import type { Topic, TopicProgress } from "@/lib/types";
 
 import { CompletionBadge, CompletionBar } from "./ui";
@@ -35,6 +35,9 @@ export default function TopicCard({ topic, progress }: { topic: Topic; progress?
             {MODE_LABELS[mode]}
           </Link>
         ))}
+        <Link href={finalTestLink(topic.slug)} className="btn btn-secondary px-3 py-1.5 text-sm">
+          Final test
+        </Link>
       </div>
     </article>
   );
