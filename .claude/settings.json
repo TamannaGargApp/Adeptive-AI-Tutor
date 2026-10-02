@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(where npx *)",
+      "Bash(wmic process *)",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter 'ProcessId=40344' | Select-Object ProcessId,ParentProcessId,CommandLine,CreationDate | Format-List\")",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"ParentProcessId=36564\\\\\" | Select-Object ProcessId,CommandLine | Format-List\")",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"ProcessId=36564\\\\\" | Select-Object ProcessId,CommandLine,CreationDate | Format-List\")",
+      "Bash(d=\"D:/projects_mine/Adaptive_AI_Tutor/adaptive-ai-tutor\" *)",
+      "Read(//d/projects_mine/Adaptive_AI_Tutor/adaptive-ai-tutor/**)",
+      "Bash(where chromium-cli *)",
+      "Read(//d//**)",
+      "Read(//c/Users/taman/AppData/Local/Temp/claude/bundled-skills/**)",
+      "Read(//c/Users/taman/AppData/Local/Temp/claude/bundled-skills/2.1.263/**)",
+      "Bash(npm info *)",
+      "Bash(mkdir -p \"C:/Users/taman/AppData/Local/Temp/claude/d--projects-mine-Adaptive-AI-Tutor-adaptive-ai-tutor/bea7727e-8af4-44df-b776-dba331e2e632/scratchpad/pw-debug\")",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(curl -s -o /dev/null -w \"backend health -> %{http_code}\\\\n\" http://localhost:8000/api/health)",
+      "Bash(curl -s -o /dev/null -w \"frontend -> %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(jobs -l)",
+      "Read(//c/Users/taman/AppData/Local/ms-playwright/**)",
+      "Bash(powershell -NoProfile -Command \"Get-Process chrome,node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime\")",
+      "Bash(node debug.js)",
+      "Bash(node debug2.js)",
+      "Bash(nohup npm run dev)",
+      "Bash(disown)",
+      "Bash(echo \"launched, pid of job: $!\")",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:3000/ >/dev/null 2>&1; do sleep 1; done')"
+    ],
+    "additionalDirectories": [
+      "D:\\projects_mine\\Adaptive_AI_Tutor\\adaptive-ai-tutor\\frontend\\.next",
+      "C:\\Users\\taman\\AppData\\Local\\Temp\\claude\\d--projects-mine-Adaptive-AI-Tutor-adaptive-ai-tutor\\bea7727e-8af4-44df-b776-dba331e2e632\\scratchpad\\pw-debug"
+    ]
+  }
+}

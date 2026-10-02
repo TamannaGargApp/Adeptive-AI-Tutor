@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/*
+  Palette drawn from Python's own identity: a deep "Python blue" for structure and actions,
+  and the Python yellow reserved for one job only: the tutor's hints and guidance.
+*/
+@theme {
+  --color-ink: #17212b;
+  --color-ink-soft: #4a5866;
+  --color-paper: #f4f6f9;
+  --color-surface: #ffffff;
+  --color-line: #d9e0e8;
+  --color-blue: #2f5f8a;
+  --color-blue-deep: #1f4466;
+  --color-blue-tint: #e5eef6;
+  --color-sun: #ffd43b;
+  --color-sun-tint: #fff5cc;
+  --color-good: #2e7d4f;
+  --color-good-tint: #e2f2e8;
+  --color-bad: #b4441b;
+  --color-bad-tint: #fbe8df;
+
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  line-height: 1.55;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1.125rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+    transition: background-color 120ms ease;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-blue);
+    color: white;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-blue-deep);
+  }
+  .btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-blue-deep);
+    border-color: var(--color-line);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-blue-tint);
+  }
+  .input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.625rem 0.75rem;
+  }
+  .input:focus {
+    border-color: var(--color-blue);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-blue-tint);
+  }
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+  }
+}

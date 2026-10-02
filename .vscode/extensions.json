@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "bradlc.vscode-tailwindcss",
+    "mongodb.mongodb-vscode"
+  ]
+}

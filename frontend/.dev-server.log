@@ -1,0 +1,16 @@
+
+> adaptive-ai-tutor-frontend@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.27
+   - Local:        http://localhost:3000
+   - Network:      http://10.196.4.169:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling / ...
+ ✓ Compiled / in 3.2s (703 modules)
+ GET / 200 in 3542ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 695ms (689 modules)
+ GET / 404 in 1231ms

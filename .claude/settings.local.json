@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"from PIL import Image; im=Image.open\\(r'D:/projects_mine/Adaptive_AI_Tutor/adaptive-ai-tutor/logo/Adaptive_AI_Tutor_icon.png'\\); print\\(im.size, im.mode\\)\")",
+      "Bash(python3 -c \"from PIL import Image; im=Image.open\\(r'D:/projects_mine/Adaptive_AI_Tutor/adaptive-ai-tutor/logo/Adaptive_AI_Tutor_logo_1.png'\\); print\\(im.size, im.mode\\)\")",
+      "Bash(python3 -c \"import PIL; print\\(PIL.__version__\\)\")",
+      "Bash(where magick *)",
+      "Bash(where convert *)",
+      "Bash(python3 -c \"import PIL; print\\('PIL ok', PIL.__version__\\)\")",
+      "Bash(pip3 list *)",
+      "Bash(pip install *)",
+      "Bash(C:/Users/taman/AppData/Local/Programs/Python/Python311/python.exe -)",
+      "Bash(C:/Users/taman/AppData/Local/Programs/Python/Python311/python.exe -c ' *)",
+      "Bash(curl -s -o /dev/null -w \"icon.png -> %{http_code}\\\\n\" http://localhost:3000/icon.png)",
+      "Bash(curl -s -o /dev/null -w \"_next/image icon -> %{http_code}\\\\n\" \"http://localhost:3000/_next/image?url=%2Ficon.png&w=64&q=75\")",
+      "Bash(curl -s -I http://localhost:3000/icon.png)",
+      "Bash(mv \"D:/projects_mine/Adaptive_AI_Tutor/adaptive-ai-tutor/frontend/public/icon.png\" \"D:/projects_mine/Adaptive_AI_Tutor/adaptive-ai-tutor/frontend/public/logo-mark.png\" *)",
+      "Bash(curl -s -o /dev/null -w \"logo-mark.png -> %{http_code}\\\\n\" http://localhost:3000/logo-mark.png)",
+      "Bash(curl -s -o /dev/null -w \"icon.png \\(favicon\\) -> %{http_code}\\\\n\" http://localhost:3000/icon.png)",
+      "Bash(curl -s -o /dev/null -w \"dashboard page -> %{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(netstat -ano)",
+      "Bash(where mongod *)",
+      "Bash(sc query *)",
+      "Bash(tasklist)",
+      "Bash(timeout 20 .venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8010)",
+      "Bash(curl -s http://127.0.0.1:8010/api/health)",
+      "Bash(kill %1)",
+      "Bash(.venv/Scripts/python.exe -)"
+    ],
+    "additionalDirectories": [
+      "D:\\projects_mine\\Adaptive_AI_Tutor\\adaptive-ai-tutor\\frontend\\public"
+    ]
+  }
+}
