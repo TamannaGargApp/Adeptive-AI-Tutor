@@ -15,7 +15,7 @@ from app.prompts.tutor_prompt import (
 )
 from app.schemas.quiz import QuizResponse
 from app.schemas.tutor import LearnReply, LessonResponse, QuestionResponse
-from app.services import progress_service, question_service, session_service, topic_service
+from app.services import progress_service, question_service, session_service, subject_service, topic_service
 from app.services.ai_service import StructuredLLM
 
 QUIZ_LENGTH = 5
@@ -27,6 +27,7 @@ async def build_learner_context(
     user: User, topic_slug: str, difficulty: Level, mode: LearningMode
 ) -> LearnerContext:
     topic = await topic_service.get_topic(topic_slug)
+    subject = await subject_service.get_subject(topic.subject)
     progress = await progress_service.get_topic_progress(user.id, topic_slug)
     summary = progress_service.to_topic_progress_out(topic, progress, difficulty)
     return LearnerContext(
@@ -44,6 +45,8 @@ async def build_learner_context(
         strengths=summary.strengths,
         weaknesses=summary.weaknesses,
         recent_results=progress.recent_results if progress else [],
+        subject_name=subject.name,
+        language=subject.language,
     )
 
 
@@ -54,21 +57,21 @@ async def teach(user: User, session_id: str, message: str, ai: StructuredLLM) ->
 
     lesson = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
-        user_prompt=build_lesson_prompt(session.messages[-LESSON_HISTORY_LIMIT:], message),
+        user_prompt=build_lesson_prompt(session.messages[-LESSON_HISTORY_LIMIT:], message, context.subject_name),
         response_model=LessonResponse,
     )
 
     now = datetime.now(UTC)
-    reply = ChatMessage(role="tutor", content=format_lesson_markdown(lesson), created_at=now)
+    reply = ChatMessage(role="tutor", content=format_lesson_markdown(lesson, context.language), created_at=now)
     new_messages = [ChatMessage(role="student", content=message, created_at=now)] if message else []
     await session_service.append_messages(session.id, [*new_messages, reply])
     return LearnReply(session_id=session.id, reply=reply, lesson=lesson)
 
 
-def format_lesson_markdown(lesson: LessonResponse) -> str:
+def format_lesson_markdown(lesson: LessonResponse, language: str) -> str:
     parts = [lesson.explanation.strip()]
     if lesson.example_code:
-        parts.append(f"```python\n{lesson.example_code.strip()}\n```")
+        parts.append(f"```{language}\n{lesson.example_code.strip()}\n```")
     if lesson.example_explanation:
         parts.append(lesson.example_explanation.strip())
     if lesson.check_question:

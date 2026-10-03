@@ -21,6 +21,7 @@ from app.services import (
     question_service,
     recommendation_service,
     session_service,
+    topic_service,
     tutor_service,
 )
 from app.services.ai_service import StructuredLLM
@@ -131,7 +132,9 @@ async def _get_ai_feedback(
     try:
         return await ai.generate_structured(
             system_prompt=build_system_prompt(context),
-            user_prompt=build_evaluation_prompt(question, answer, known_correct, attempt_number, reveal),
+            user_prompt=build_evaluation_prompt(
+                question, answer, known_correct, attempt_number, reveal, context.language
+            ),
             response_model=EvaluationResponse,
         )
     except AIServiceError:
@@ -151,7 +154,8 @@ async def build_quiz_result(user: User, session_id: str) -> QuizResult:
     strong_concepts = [
         concept for concept in _unique(question.concept for question in correct) if concept not in missed_concepts
     ]
-    recommendation: RecommendationResponse = await recommendation_service.recommend_next_topic(user)
+    topic = await topic_service.get_topic(session.topic_slug)
+    recommendation: RecommendationResponse = await recommendation_service.recommend_next_topic(user, topic.subject)
 
     return QuizResult(
         session_id=session.id,

@@ -9,6 +9,7 @@ class TopicOut(BaseModel):
     description: str
     key_concepts: list[str]
     order: int
+    subject: str
 
     @classmethod
     def from_topic(cls, topic: Topic) -> "TopicOut":

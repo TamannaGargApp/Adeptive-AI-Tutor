@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { api, errorMessage } from "@/lib/api";
+import { useGamification } from "@/lib/gamification";
 import type { ChatMessage, LearningSession } from "@/lib/types";
 
 import Markdown from "./Markdown";
@@ -28,6 +29,7 @@ export default function ChatWindow({ session }: { session: LearningSession }) {
   const startedSessionRef = useRef<string | null>(null);
   const hasScrolledRef = useRef(false);
   const resumed = session.messages.length > 0;
+  const { refresh: refreshGamification } = useGamification();
 
   // Keep the newest message in view. Jump instantly on first load, scroll smoothly afterwards.
   useEffect(() => {
@@ -57,6 +59,7 @@ export default function ChatWindow({ session }: { session: LearningSession }) {
     try {
       const { reply } = await api.learn(session.id, trimmed);
       setMessages((current) => [...current, reply]);
+      if (trimmed) refreshGamification();
     } catch (err) {
       setError(errorMessage(err));
       setFailedMessage(trimmed);
@@ -97,7 +100,7 @@ export default function ChatWindow({ session }: { session: LearningSession }) {
         <div className="mx-auto w-full max-w-3xl space-y-4 p-4 sm:p-6">
           {resumed && (
             <p className="text-center text-xs text-ink-soft">
-              Continuing your previous conversation. Use &ldquo;New conversation&rdquo; to start over.
+              Continuing a saved conversation. Open History to switch, or start a new conversation.
             </p>
           )}
           {messages.map((message, index) => (

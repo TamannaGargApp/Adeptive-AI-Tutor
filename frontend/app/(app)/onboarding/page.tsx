@@ -1,20 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Alert } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { GOAL_LABELS, LEVEL_LABELS, LEVELS } from "@/lib/labels";
-import type { LearningGoal, Level } from "@/lib/types";
+import type { LearningGoal, Level, Subject } from "@/lib/types";
 
 const GOALS = Object.keys(GOAL_LABELS) as LearningGoal[];
 
 const LEVEL_HINTS: Record<Level, string> = {
-  beginner: "New to Python or programming",
+  beginner: "New to programming",
   intermediate: "Comfortable with the basics",
-  advanced: "Writing Python regularly",
+  advanced: "Writing code regularly",
 };
 
 interface ChoiceGroupProps<T extends string> {
@@ -63,19 +63,34 @@ export default function OnboardingPage() {
   const [level, setLevel] = useState<Level | null>(user?.level ?? null);
   const [goal, setGoal] = useState<LearningGoal | null>(user?.goal ?? null);
   const [difficulty, setDifficulty] = useState<Level | null>(user?.preferred_difficulty ?? null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subject, setSubject] = useState<string | null>(user?.current_subject ?? null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    api
+      .getSubjects()
+      .then(setSubjects)
+      .catch((err) => setError(errorMessage(err)));
+  }, []);
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!name.trim() || !level || !goal || !difficulty) {
+    if (!name.trim() || !subject || !level || !goal || !difficulty) {
       setError("Fill in your name and pick one option in each section.");
       return;
     }
     setError(null);
     setSaving(true);
     try {
-      const updated = await api.updateProfile({ name: name.trim(), level, goal, preferred_difficulty: difficulty });
+      const updated = await api.updateProfile({
+        name: name.trim(),
+        level,
+        goal,
+        preferred_difficulty: difficulty,
+        subject_slug: subject,
+      });
       setUser(updated);
       router.replace("/dashboard");
     } catch (err) {
@@ -99,9 +114,21 @@ export default function OnboardingPage() {
           <input id="name" className="input" value={name} onChange={(event) => setName(event.target.value)} />
         </div>
 
+        {subjects.length > 0 && (
+          <ChoiceGroup
+            name="subject"
+            legend="What do you want to learn first?"
+            options={subjects.map((item) => item.slug)}
+            labels={Object.fromEntries(subjects.map((item) => [item.slug, item.name]))}
+            hints={Object.fromEntries(subjects.map((item) => [item.slug, item.description]))}
+            value={subject}
+            onChange={setSubject}
+          />
+        )}
+
         <ChoiceGroup
           name="level"
-          legend="Current Python level"
+          legend="Current programming level"
           options={LEVELS}
           labels={LEVEL_LABELS}
           hints={LEVEL_HINTS}

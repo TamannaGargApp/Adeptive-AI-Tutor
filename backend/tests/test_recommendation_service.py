@@ -44,8 +44,30 @@ def test_good_progress_moves_to_next_unstarted_topic():
     assert result.reason == "next_topic"
 
 
-def test_everything_mastered_suggests_a_harder_quiz():
-    progress = {topic.slug: _progress(topic.slug, 10, 10) for topic in TOPICS}
-    result = choose_recommendation(TOPICS, progress, Level.BEGINNER)
+def _complete(slug: str) -> TopicProgress:
+    """A topic meeting every completion requirement (the test topics have no key concepts)."""
+    return _progress(slug, 10, 10).model_copy(
+        update={"last_answers": [True] * 10, "final_test_passed": True, "best_final_test_accuracy": 90.0}
+    )
+
+
+def test_ready_topic_is_sent_to_its_final_test():
+    ready = _progress("variables", 10, 10).model_copy(update={"last_answers": [True] * 10})
+    result = choose_recommendation(TOPICS, {"variables": ready}, Level.BEGINNER)
+    assert result.topic_slug == "variables"
+    assert result.suggested_mode == "final_test"
+
+
+def test_all_topics_complete_unlocks_the_course_exam():
+    progress = {topic.slug: _complete(topic.slug) for topic in TOPICS}
+    result = choose_recommendation(TOPICS, progress, Level.BEGINNER, subject_slug="python", subject_name="Python")
+    assert result.reason == "course_exam"
+    assert result.suggested_mode == "course_exam"
+    assert result.topic_name == "Python course exam"
+
+
+def test_completed_course_suggests_a_harder_quiz():
+    progress = {topic.slug: _complete(topic.slug) for topic in TOPICS}
+    result = choose_recommendation(TOPICS, progress, Level.BEGINNER, course_exam_passed=True)
     assert result.reason == "challenge"
     assert result.suggested_difficulty == Level.INTERMEDIATE

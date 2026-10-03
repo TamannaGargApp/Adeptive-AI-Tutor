@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import PasswordInput from "@/components/PasswordInput";
 import { Alert } from "@/components/ui";
 import { errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -82,28 +83,37 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
         {error && <Alert>{error}</Alert>}
 
-        {FIELDS.map((field) => (
-          <div key={field.key} className="space-y-1.5">
-            <label htmlFor={field.key} className="block text-sm font-bold">
-              {field.label}
-            </label>
-            <input
-              id={field.key}
-              type={field.type}
-              autoComplete={field.autoComplete}
-              className={`input ${fieldErrors[field.key] ? "border-bad focus:border-bad" : ""}`}
-              value={values[field.key]}
-              aria-invalid={Boolean(fieldErrors[field.key])}
-              aria-describedby={fieldErrors[field.key] ? `${field.key}-error` : undefined}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-            />
-            {fieldErrors[field.key] && (
-              <p id={`${field.key}-error`} className="text-sm text-bad">
-                {fieldErrors[field.key]}
-              </p>
-            )}
-          </div>
-        ))}
+        {FIELDS.map((field) => {
+          const hasError = Boolean(fieldErrors[field.key]);
+          const inputProps = {
+            id: field.key,
+            autoComplete: field.autoComplete,
+            value: values[field.key],
+            "aria-invalid": hasError,
+            "aria-describedby": hasError ? `${field.key}-error` : undefined,
+            onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+              setValues({ ...values, [field.key]: event.target.value }),
+          };
+          const errorBorder = hasError ? "border-bad focus:border-bad" : "";
+
+          return (
+            <div key={field.key} className="space-y-1.5">
+              <label htmlFor={field.key} className="block text-sm font-bold">
+                {field.label}
+              </label>
+              {field.type === "password" ? (
+                <PasswordInput {...inputProps} className={errorBorder} />
+              ) : (
+                <input {...inputProps} type={field.type} className={`input ${errorBorder}`} />
+              )}
+              {hasError && (
+                <p id={`${field.key}-error`} className="text-sm text-bad">
+                  {fieldErrors[field.key]}
+                </p>
+              )}
+            </div>
+          );
+        })}
 
         <button type="submit" className="btn btn-primary w-full py-3 text-base" disabled={submitting}>
           {submitting ? "Creating account…" : "Create account"}

@@ -16,7 +16,7 @@ const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrai
 
 export const metadata: Metadata = {
   title: "Adaptive AI Tutor",
-  description: "Learn Python through personalized explanations, practice, quizzes, and intelligent feedback.",
+  description: "Learn Python and JavaScript through personalized explanations, practice, quizzes, and intelligent feedback.",
 };
 
 // Runs before the page is painted, so a saved dark theme never flashes light first.

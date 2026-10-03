@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { FullPageSpinner } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
+import { GamificationProvider } from "@/lib/gamification";
 
 /** Guards every signed-in page: requires login, and onboarding before anything else. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -32,9 +33,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const fullHeight = pathname.startsWith("/tutor");
 
   return (
-    <div className={fullHeight ? "flex h-dvh flex-col overflow-hidden" : "flex min-h-screen flex-col"}>
-      <Navbar />
-      <main className={fullHeight ? "flex min-h-0 flex-1 flex-col" : "flex flex-1 flex-col"}>{children}</main>
-    </div>
+    <GamificationProvider>
+      <div className={fullHeight ? "flex h-dvh flex-col overflow-hidden" : "flex min-h-screen flex-col"}>
+        <Navbar />
+        <main className={fullHeight ? "flex min-h-0 flex-1 flex-col" : "flex flex-1 flex-col"}>{children}</main>
+      </div>
+    </GamificationProvider>
   );
 }

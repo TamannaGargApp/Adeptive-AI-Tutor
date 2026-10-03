@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, errorMessage } from "@/lib/api";
+import { useGamification } from "@/lib/gamification";
 import { LEVEL_LABELS } from "@/lib/labels";
 import type { EvaluationResult, LearningSession, Level, Question } from "@/lib/types";
 
@@ -24,6 +25,7 @@ export default function PracticePanel({ session, onDifficultyChange }: PracticeP
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const loadedSessionRef = useRef<string | null>(null);
+  const { refresh: refreshGamification } = useGamification();
 
   const loadQuestion = useCallback(async () => {
     setLoading(true);
@@ -54,6 +56,7 @@ export default function PracticePanel({ session, onDifficultyChange }: PracticeP
     try {
       const evaluation = await api.evaluate(question.id, answer);
       setResult(evaluation);
+      refreshGamification();
       if (evaluation.difficulty_changed) {
         onDifficultyChange(evaluation.next_difficulty);
         setNotice(

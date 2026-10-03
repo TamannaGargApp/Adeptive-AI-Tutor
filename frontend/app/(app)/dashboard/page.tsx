@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { GamificationSummary } from "@/components/Achievements";
+import CourseExamStatus from "@/components/CourseExamStatus";
 import RecommendationCard from "@/components/RecommendationCard";
 import { Alert, CompletionBadge, CompletionBar, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useGamification } from "@/lib/gamification";
 import { studyLink } from "@/lib/labels";
 import type { OverallProgress, Recommendation } from "@/lib/types";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { summary: gamification } = useGamification();
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,11 +27,14 @@ export default function DashboardPage() {
         setRecommendation(recommendationData);
       })
       .catch((err) => setError(errorMessage(err)));
-  }, []);
+    // Reload when the learner switches course from the navbar.
+  }, [user?.current_subject]);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8">
       <h1 className="text-3xl font-bold">Welcome, {user?.name}</h1>
+
+      {gamification && <GamificationSummary summary={gamification} />}
 
       {error && <Alert>{error}</Alert>}
       {!progress && !error && <Spinner />}
@@ -43,13 +50,14 @@ export default function DashboardPage() {
                 <p className="flex flex-wrap items-baseline justify-between gap-2">
                   <span>
                     <span className="text-3xl font-bold">{progress.completion_percent}%</span>{" "}
-                    <span className="text-ink-soft">of the Python course complete</span>
+                    <span className="text-ink-soft">of the {progress.subject_name} course complete</span>
                   </span>
                   <span className="text-sm text-ink-soft">
                     {progress.topics_completed} of {progress.topics.length} topics complete
                   </span>
                 </p>
                 <CompletionBar percent={progress.completion_percent} label="Course completion" />
+                <CourseExamStatus progress={progress} />
               </div>
               <dl className="panel grid grid-cols-3 divide-x divide-line">
                 {[

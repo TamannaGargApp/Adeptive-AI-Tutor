@@ -7,7 +7,7 @@ export const LEVEL_LABELS: Record<Level, string> = {
 };
 
 export const GOAL_LABELS: Record<LearningGoal, string> = {
-  learn_python: "Learn Python",
+  learn_python: "Learn a new language",
   improve_problem_solving: "Improve problem solving",
   interview_preparation: "Interview preparation",
 };
@@ -60,3 +60,11 @@ export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.round(totalSeconds));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
+
+export function courseExamLink(subjectSlug: string): string {
+  return `/final-test?${new URLSearchParams({ course: subjectSlug }).toString()}`;
+}
+
+/** Failing rules; must match progress_service.py on the backend. */
+export const FAILS_BEFORE_COOLDOWN = 3;
+export const RETRY_COOLDOWN_HOURS = 12;

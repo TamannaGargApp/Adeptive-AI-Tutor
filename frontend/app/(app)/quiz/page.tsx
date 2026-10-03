@@ -9,6 +9,8 @@ import RecommendationCard from "@/components/RecommendationCard";
 import { Alert, Spinner } from "@/components/ui";
 import WaitingMessage from "@/components/WaitingMessage";
 import { api, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useGamification } from "@/lib/gamification";
 import { studyLink } from "@/lib/labels";
 import type { EvaluationResult, Quiz, QuizResult, Topic } from "@/lib/types";
 
@@ -28,13 +30,16 @@ function QuizRunner() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { refresh: refreshGamification } = useGamification();
 
   useEffect(() => {
     api
       .getTopics()
       .then(setTopics)
       .catch((err) => setError(errorMessage(err)));
-  }, []);
+    // Reload when the learner switches course from the navbar.
+  }, [user?.current_subject]);
 
   useEffect(() => {
     // Picking another topic from the URL starts over.
@@ -45,6 +50,12 @@ function QuizRunner() {
   }, [topicSlug]);
 
   const topic = topics?.find((item) => item.slug === topicSlug);
+
+  // Quizzes are started from a topic (topic dialog, tutor sidebar or a recommendation), so without
+  // one there's nothing to show here: send the learner to pick a topic.
+  useEffect(() => {
+    if (topics && !topic && phase === "intro") router.replace("/topics");
+  }, [topics, topic, phase, router]);
   const question = quiz?.questions[index];
   const isLastQuestion = quiz !== null && index === quiz.questions.length - 1;
 
@@ -71,6 +82,7 @@ function QuizRunner() {
     setError(null);
     try {
       setEvaluation(await api.evaluate(question.id, answer));
+      refreshGamification();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -104,26 +116,7 @@ function QuizRunner() {
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
       {error && <Alert>{error}</Alert>}
 
-      {phase === "intro" && !topic && (
-        <>
-          <h1 className="text-3xl font-bold">Take a quiz</h1>
-          <p className="text-ink-soft">Five questions on one topic. Choose a topic to begin.</p>
-          <ul className="panel divide-y divide-line">
-            {topics.map((item) => (
-              <li key={item.slug}>
-                <button
-                  type="button"
-                  onClick={() => router.replace(studyLink(item.slug, "quiz"))}
-                  className="w-full px-4 py-3 text-left hover:bg-paper"
-                >
-                  <span className="block font-bold">{item.name}</span>
-                  <span className="text-sm text-ink-soft">{item.description}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {phase === "intro" && !topic && <Spinner label="Opening topics…" />}
 
       {phase === "intro" && topic && (
         <div className="panel space-y-4 p-6">
@@ -136,7 +129,7 @@ function QuizRunner() {
             <button type="button" className="btn btn-primary" onClick={startQuiz}>
               Start quiz
             </button>
-            <Link href="/quiz" className="btn btn-secondary">
+            <Link href="/topics" className="btn btn-secondary">
               Choose another topic
             </Link>
           </div>

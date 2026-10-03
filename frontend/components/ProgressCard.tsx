@@ -1,7 +1,37 @@
-import { LEVEL_LABELS, MASTERY_LABELS } from "@/lib/labels";
+import Link from "next/link";
+
+import { FAILS_BEFORE_COOLDOWN, finalTestLink, LEVEL_LABELS, MASTERY_LABELS } from "@/lib/labels";
 import type { TopicProgress } from "@/lib/types";
 
+import CompletionChecklist from "./CompletionChecklist";
+import Countdown from "./Countdown";
 import { CompletionBadge, CompletionBar } from "./ui";
+
+function FinalTestAction({ progress }: { progress: TopicProgress }) {
+  if (progress.final_test_locked_until) {
+    return (
+      <p className="rounded-lg border border-line bg-paper px-4 py-3 text-sm text-ink-soft">
+        Final test locked after {FAILS_BEFORE_COOLDOWN} failed attempts in a row. Opens again in{" "}
+        <Countdown until={progress.final_test_locked_until} />
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Link
+        href={finalTestLink(progress.topic_slug)}
+        className={`btn px-3 py-1.5 text-sm ${progress.ready_for_final_test ? "btn-primary" : "btn-secondary"}`}
+      >
+        {progress.ready_for_final_test ? "You're ready: take the final test" : "Take the final test"}
+      </Link>
+      {progress.final_test_fails_in_row > 0 && (
+        <span className="text-xs text-ink-soft">
+          {progress.final_test_fails_in_row} of {FAILS_BEFORE_COOLDOWN} failed attempts in a row
+        </span>
+      )}
+    </div>
+  );
+}
 
 function ConceptChips({ covered, remaining }: { covered: string[]; remaining: string[] }) {
   return (
@@ -23,7 +53,8 @@ function ConceptChips({ covered, remaining }: { covered: string[]; remaining: st
   );
 }
 
-export default function ProgressCard({ progress }: { progress: TopicProgress }) {
+/** Full detail for one topic. `embedded` drops the card frame and title, for use inside a dialog. */
+export default function ProgressCard({ progress, embedded = false }: { progress: TopicProgress; embedded?: boolean }) {
   const started = progress.questions_attempted > 0;
   const remarksTone = progress.completed
     ? "border-good bg-good-tint"
@@ -32,9 +63,9 @@ export default function ProgressCard({ progress }: { progress: TopicProgress }) 
       : "border-sun bg-sun-tint";
 
   return (
-    <article className="panel space-y-4 p-5">
+    <article className={embedded ? "space-y-4 p-5" : "panel space-y-4 p-5"}>
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-lg font-bold">{progress.topic_name}</h2>
+        {embedded ? <span /> : <h2 className="text-lg font-bold">{progress.topic_name}</h2>}
         <CompletionBadge status={progress.completion_status} />
       </div>
 
@@ -46,25 +77,7 @@ export default function ProgressCard({ progress }: { progress: TopicProgress }) 
         <CompletionBar percent={progress.completion_percent} label={`${progress.topic_name} completion`} />
       </div>
 
-      <ul className="space-y-1.5 text-sm" aria-label="Completion requirements">
-        {progress.requirements.map((requirement) => (
-          <li key={requirement.label} className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                requirement.met ? "bg-good text-on-accent" : "border border-line text-transparent"
-              }`}
-            >
-              ✓
-            </span>
-            <span className="flex-1">
-              {requirement.label}
-              <span className="sr-only">{requirement.met ? " (done)" : " (not yet)"}</span>
-            </span>
-            <span className="font-mono text-xs text-ink-soft">{requirement.progress}</span>
-          </li>
-        ))}
-      </ul>
+      <CompletionChecklist requirements={progress.requirements} />
 
       <ConceptChips covered={progress.concepts_covered} remaining={progress.concepts_remaining} />
 
@@ -76,6 +89,8 @@ export default function ProgressCard({ progress }: { progress: TopicProgress }) 
           ))}
         </ul>
       </div>
+
+      {!progress.completed && <FinalTestAction progress={progress} />}
 
       {started && (
         <p className="text-xs text-ink-soft">

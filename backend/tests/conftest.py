@@ -18,7 +18,7 @@ from app.core.dependencies import get_ai_service  # noqa: E402
 from app.core.exceptions import AIServiceError  # noqa: E402
 from app.db.indexes import create_indexes  # noqa: E402
 from app.db.mongodb import close_mongo_connection, connect_to_mongo, get_database  # noqa: E402
-from app.db.seed import seed_topics  # noqa: E402
+from app.db.seed import seed_courses  # noqa: E402
 from app.main import app  # noqa: E402
 
 TEST_PASSWORD = "correct-horse-battery"
@@ -49,7 +49,7 @@ async def database():
     db = get_database()
     await db.client.drop_database(settings.database_name)
     await create_indexes()
-    await seed_topics()
+    await seed_courses()
     yield db
     await db.client.drop_database(settings.database_name)
     await close_mongo_connection()

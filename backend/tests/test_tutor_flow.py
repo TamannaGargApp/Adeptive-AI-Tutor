@@ -153,3 +153,20 @@ async def test_learn_mode_resumes_the_latest_conversation(auth_client, fake_ai):
     assert len(resumed["messages"]) == 2
     assert fresh["id"] != first["id"]
     assert fresh["messages"] == []
+
+
+async def test_learn_history_lists_past_conversations(auth_client, fake_ai):
+    fake_ai.responses[LessonResponse] = LessonResponse(
+        explanation="Loops repeat code.", example_code=None, example_explanation=None, check_question=None, on_topic=True
+    )
+    first = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()
+    await auth_client.post("/api/tutor/learn", json={"session_id": first["id"], "message": "What is a while loop?"})
+    second = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()
+    await auth_client.post("/api/tutor/learn", json={"session_id": second["id"], "message": "Explain range()"})
+    await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})  # empty: not listed
+
+    history = (await auth_client.get("/api/sessions", params={"topic_slug": "loops"})).json()
+
+    assert [item["id"] for item in history] == [second["id"], first["id"]]
+    assert history[1]["preview"] == "What is a while loop?"
+    assert history[1]["message_count"] == 2

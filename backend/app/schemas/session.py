@@ -15,6 +15,17 @@ class SessionCreate(BaseModel):
     resume: bool = False
 
 
+class SessionSummary(BaseModel):
+    """One past conversation in the Learn history list (without the full message history)."""
+
+    id: str
+    difficulty: Level
+    message_count: int
+    preview: str
+    created_at: datetime
+    updated_at: datetime
+
+
 class SessionOut(BaseModel):
     id: str
     topic_slug: str

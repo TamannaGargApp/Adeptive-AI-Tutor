@@ -6,15 +6,18 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogoMark } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
 
+import CourseSwitcher from "./CourseSwitcher";
+import StreakChip from "./StreakChip";
 import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/courses", label: "Courses" },
   { href: "/topics", label: "Topics" },
   { href: "/tutor", label: "Tutor" },
-  { href: "/quiz", label: "Quiz" },
   { href: "/final-test", label: "Final test" },
   { href: "/progress", label: "Progress" },
+  { href: "/achievements", label: "Achievements" },
 ];
 
 export default function Navbar() {
@@ -55,6 +58,8 @@ export default function Navbar() {
         )}
 
         <div className="ml-auto flex items-center gap-3 text-sm">
+          {user?.onboarding_completed && <StreakChip />}
+          {user?.onboarding_completed && <CourseSwitcher />}
           <ThemeToggle />
           {user && <span className="hidden text-ink-soft md:inline">{user.name}</span>}
           <button type="button" onClick={handleLogout} className="font-bold text-blue hover:text-blue-deep">

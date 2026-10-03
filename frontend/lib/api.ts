@@ -1,6 +1,8 @@
 import type {
+  ActivityHistory,
   EvaluationResult,
   FinalTest,
+  Gamification,
   LearnReply,
   LearningMode,
   LearningSession,
@@ -11,6 +13,8 @@ import type {
   Quiz,
   QuizResult,
   Recommendation,
+  SessionSummary,
+  Subject,
   Topic,
   TopicProgress,
   User,
@@ -93,6 +97,16 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return (await response.json()) as T;
 }
 
+/** Streak days are counted in the learner's own timezone. */
+function timezoneQuery(): string {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  return new URLSearchParams({ tz: timezone }).toString();
+}
+
+function subjectQuery(subjectSlug?: string): string {
+  return subjectSlug ? `?${new URLSearchParams({ subject: subjectSlug }).toString()}` : "";
+}
+
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
@@ -107,7 +121,15 @@ export const api = {
 
   updateProfile: (data: ProfileUpdate) => request<User>("/api/profile", { method: "PUT", body: data }),
 
-  getTopics: () => request<Topic[]>("/api/topics"),
+  getSubjects: () => request<Subject[]>("/api/subjects"),
+  addSubjectToPlan: (subjectSlug: string) => request<User>(`/api/plan/subjects/${subjectSlug}`, { method: "POST" }),
+  removeSubjectFromPlan: (subjectSlug: string) =>
+    request<User>(`/api/plan/subjects/${subjectSlug}`, { method: "DELETE" }),
+  setCurrentSubject: (subjectSlug: string) =>
+    request<User>("/api/plan/current", { method: "PUT", body: { subject_slug: subjectSlug } }),
+
+  // These default to the learner's current course when no course is given.
+  getTopics: (subjectSlug?: string) => request<Topic[]>(`/api/topics${subjectQuery(subjectSlug)}`),
 
   createSession: (topicSlug: string, mode: LearningMode, difficulty?: Level, resume = false) =>
     request<LearningSession>("/api/sessions", {
@@ -115,6 +137,8 @@ export const api = {
       body: { topic_slug: topicSlug, mode, difficulty: difficulty ?? null, resume },
     }),
   getSession: (sessionId: string) => request<LearningSession>(`/api/sessions/${sessionId}`),
+  listLearnSessions: (topicSlug: string) =>
+    request<SessionSummary[]>(`/api/sessions?${new URLSearchParams({ topic_slug: topicSlug }).toString()}`),
 
   learn: (sessionId: string, message: string) =>
     request<LearnReply>("/api/tutor/learn", {
@@ -138,18 +162,33 @@ export const api = {
     request<Quiz>("/api/tutor/quiz", { method: "POST", body: { session_id: sessionId }, timeoutMs: AI_TIMEOUT_MS }),
   getQuizResult: (sessionId: string) => request<QuizResult>(`/api/tutor/quiz/${sessionId}/result`),
 
-  startFinalTest: (topicSlug: string) =>
+  startTopicTest: (topicSlug: string) =>
     request<FinalTest>("/api/final-tests", { method: "POST", body: { topic_slug: topicSlug }, timeoutMs: AI_TIMEOUT_MS }),
+  startCourseExam: (subjectSlug: string) =>
+    request<FinalTest>("/api/final-tests", {
+      method: "POST",
+      body: { subject_slug: subjectSlug },
+      timeoutMs: AI_TIMEOUT_MS,
+    }),
   getFinalTest: (testId: string) => request<FinalTest>(`/api/final-tests/${testId}`),
   saveFinalTestAnswer: (testId: string, questionId: string, answer: string) =>
     request<{ message: string }>(`/api/final-tests/${testId}/answers`, {
       method: "PUT",
       body: { question_id: questionId, answer },
     }),
+  updateFinalTestStatus: (testId: string, questionId: string, status: { flagged?: boolean; visited?: boolean }) =>
+    request<{ message: string }>(`/api/final-tests/${testId}/status`, {
+      method: "PUT",
+      body: { question_id: questionId, ...status },
+    }),
   submitFinalTest: (testId: string, answers: Record<string, string>) =>
     request<FinalTest>(`/api/final-tests/${testId}/submit`, { method: "POST", body: { answers } }),
 
-  getProgress: () => request<OverallProgress>("/api/progress"),
+  getGamification: () => request<Gamification>(`/api/gamification?${timezoneQuery()}`),
+  getActivity: (days = 30) => request<ActivityHistory>(`/api/activity?${timezoneQuery()}&days=${days}`),
+
+  getProgress: (subjectSlug?: string) => request<OverallProgress>(`/api/progress${subjectQuery(subjectSlug)}`),
   getTopicProgress: (topicSlug: string) => request<TopicProgress>(`/api/progress/${topicSlug}`),
-  getRecommendation: () => request<Recommendation>("/api/recommendations"),
+  getRecommendation: (subjectSlug?: string) =>
+    request<Recommendation>(`/api/recommendations${subjectQuery(subjectSlug)}`),
 };

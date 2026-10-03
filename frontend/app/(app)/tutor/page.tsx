@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
+import ChatHistory from "@/components/ChatHistory";
 import ChatWindow from "@/components/ChatWindow";
 import PracticePanel from "@/components/PracticePanel";
 import Sidebar from "@/components/Sidebar";
 import { Alert, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { MODE_LABELS, studyLink } from "@/lib/labels";
 import type { LearningMode, LearningSession, Level, Topic } from "@/lib/types";
 
@@ -21,11 +23,16 @@ function TutorWorkspace() {
   const [sessionVersion, setSessionVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { user } = useAuth();
   const sessionKeyRef = useRef("");
   // Learn mode continues the previous conversation unless the learner asks for a new one.
   const startFreshRef = useRef(false);
 
-  const topicSlug = searchParams.get("topic") ?? topics?.[0]?.slug ?? "";
+  // Only accept a topic from the current course; otherwise start at the course's first topic.
+  const requestedTopic = searchParams.get("topic");
+  const topicSlug =
+    (requestedTopic && topics?.some((item) => item.slug === requestedTopic) ? requestedTopic : topics?.[0]?.slug) ?? "";
   const mode: LearningMode = searchParams.get("mode") === "practice" ? "practice" : "learn";
   const topic = topics?.find((item) => item.slug === topicSlug);
   // Right after switching topic or mode, `session` still holds the previous one until the new
@@ -39,7 +46,8 @@ function TutorWorkspace() {
       .getTopics()
       .then(setTopics)
       .catch((err) => setError(errorMessage(err)));
-  }, []);
+    // Reload when the learner switches course from the navbar.
+  }, [user?.current_subject]);
 
   useEffect(() => {
     if (!topicSlug) return;
@@ -86,9 +94,22 @@ function TutorWorkspace() {
     setSessionVersion((version) => version + 1);
   }
 
+  async function openConversation(sessionId: string) {
+    setHistoryOpen(false);
+    if (sessionId === activeSession?.id) return;
+    setError(null);
+    try {
+      setSession(await api.getSession(sessionId));
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   function applyAdaptiveDifficulty(level: Level) {
     setSession((current) => (current ? { ...current, difficulty: level } : current));
   }
+
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
 
   if (!topics) {
     return <div className="p-6">{error ? <Alert>{error}</Alert> : <Spinner />}</div>;
@@ -108,14 +129,25 @@ function TutorWorkspace() {
       />
 
       <section className="flex min-h-0 flex-1 flex-col" aria-label="Tutor">
-        <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6">
+        <div className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-3 sm:px-6">
           <h1 className="min-w-0 flex-1 truncate text-lg font-bold">
             {topic?.name ?? "Tutor"} <span className="font-normal text-ink-soft">· {MODE_LABELS[mode]}</span>
           </h1>
           {mode === "learn" && activeSession && (
-            <button type="button" className="btn btn-secondary px-3 py-1.5 text-sm" onClick={startNewConversation}>
-              New conversation
-            </button>
+            <>
+              <button type="button" className="btn btn-secondary px-3 py-1.5 text-sm" onClick={() => setHistoryOpen(true)}>
+                History
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary px-3 py-1.5 text-sm"
+                onClick={startNewConversation}
+                aria-label="New conversation"
+              >
+                <span className="sm:hidden">New</span>
+                <span className="hidden sm:inline">New conversation</span>
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -158,6 +190,16 @@ function TutorWorkspace() {
           </div>
         )}
       </section>
+
+      {historyOpen && topic && (
+        <ChatHistory
+          topicSlug={topic.slug}
+          topicName={topic.name}
+          currentSessionId={activeSession?.id ?? null}
+          onSelect={openConversation}
+          onClose={closeHistory}
+        />
+      )}
     </div>
   );
 }

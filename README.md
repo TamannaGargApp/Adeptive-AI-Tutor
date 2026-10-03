@@ -1,37 +1,56 @@
 # Adaptive AI Tutor
 
-A personalized Python tutor for beginners and early-intermediate learners. It explains concepts at the
+A personalized programming tutor for beginners and early-intermediate learners, with courses in
+**Python** and **JavaScript**. It explains concepts at the
 learner's level, asks practice and quiz questions, grades answers, gives hints before solutions, tracks
 progress per topic, adapts difficulty, and recommends what to study next.
 
-It is deliberately **not** a general chatbot: every AI call is scoped to the selected Python topic, and
+It is deliberately **not** a general chatbot: every AI call is scoped to the selected course and topic, and
 off-topic requests are politely redirected.
 
 ## Features
 
 - **Accounts**: registration, login, logout, Argon2 password hashing, JWT in an httpOnly cookie.
-- **Onboarding**: name, Python level, learning goal, preferred difficulty.
+- **Onboarding**: name, first course, programming level, learning goal, preferred difficulty.
+- **Courses and learning plan**: add or remove courses on the Courses page and switch between them from
+  the course menu in the navbar. Every page shows the current course. Removing a course keeps its progress.
 - **Dashboard**: course completion, questions attempted, correct answers, accuracy, completion and status
   for every topic, and a recommended next topic.
 - **Learn mode**: chat-style lessons: explanation, example, walkthrough of the example, and a check question.
-  Conversations are saved and resumed per topic, with a "New conversation" option.
+  Conversations are saved and resumed per topic. "History" lists past conversations to reopen, and
+  "New conversation" starts fresh.
 - **Practice mode**: one question at a time; wrong answers get feedback and a hint. The answer is revealed
   after 3 attempts.
 - **Quiz mode**: 5 generated questions, one attempt each, final score, strong areas, areas to practice,
-  and a recommendation.
-- **Final test**: 10 questions per topic with a 15-minute timer. Answers autosave and stay hidden until
-  you submit (or time runs out), then a full analysis shows score, time, per-concept results, and a
-  review of every question.
-- **Topic completion standard**: 100% when you've answered at least 10 questions, got 9 of your last 10
-  right, and answered every key concept correctly, with remarks on what's left.
+  and a recommendation. Quizzes are started from a topic: the
+  topic dialog on the Topics page, the tutor sidebar, or a recommendation.
+- **Final tests**: a topic test (10 questions, 15 minutes) or a **course exam** across every topic of a
+  course (2 questions per topic, 90 seconds each). Answers autosave and stay hidden until you submit (or
+  time runs out). Questions can be marked for review, and the navigator shows each question's status:
+  green answered, yellow marked for review, red skipped, grey not visited. The analysis shows score,
+  time, results by concept (or by topic for a course exam), and a review of every question.
+- **Completion standard**: a topic is complete after enough practice, high recent accuracy, every key
+  concept covered, and a passed final test. A course is complete once every topic is complete and its
+  course exam (locked until then) is passed. Remarks say exactly what's left.
 - **Progress tracking**: accuracy, mastery level, strengths and weaknesses by concept.
+- **Streaks, XP and badges**: a daily learning streak (counted in the learner's own timezone), XP and
+  levels, 14 badges with progress toward each, and a "badge unlocked" notice. A 🔥 streak chip sits in the
+  navbar, with the full view on the Achievements page.
+- **Topics page**: compact topic cards; click one to see its checklist and key concepts and to start
+  Learn, Practice, Quiz or the final test.
+- **Progress page**: compact topic cards; click one for the full breakdown (checklist, concepts, remarks,
+  scores and the final test).
+- **Progress charts**: questions per day (correct vs incorrect), first-try accuracy over time, and a
+  30-day streak calendar.
 - **Light, dark, and system themes**, remembered per browser.
 - **Adaptive difficulty**: 3 correct in a row moves up a level; 2 misses in the last 3 moves down.
 - **Recommendations**: deterministic rules (review weak topics → continue the course → strengthen → challenge).
 
 ## Course content
 
-The course has 9 Python topics, each with its own key concepts:
+Each course has its own topics, and each topic has key concepts.
+
+**Python** (9 topics)
 
 | # | Topic | Key concepts |
 | --- | --- | --- |
@@ -45,25 +64,84 @@ The course has 9 Python topics, each with its own key concepts:
 | 8 | Exception Handling | `try`/`except`, specific exception types, `else` and `finally`, raising exceptions, common errors |
 | 9 | File Handling | opening files, file modes, reading files, writing files, `with` statement, handling file errors |
 
-Topics live in the `topics` collection and are seeded from `backend/app/db/seed.py` on startup.
-**To add a topic**, append it to the end of `INITIAL_TOPICS` and restart the backend. Nothing else in
-the code needs to change. Append rather than insert: existing topics keep their stored order number,
-so a topic inserted mid-list would share a number with an existing one.
+**JavaScript** (8 topics)
 
-### How topic completion works
+| # | Topic | Key concepts |
+| --- | --- | --- |
+| 1 | Variables & Data Types | `let` and `const`, numbers, strings, booleans, `typeof`, `null` and `undefined` |
+| 2 | Operators | arithmetic, comparison, strict equality, logical operators, type coercion |
+| 3 | Conditional Statements | `if` and `else`, `else if`, ternary operator, `switch`, truthy and falsy values |
+| 4 | Loops | `for`, `while`, `for...of`, `for...in`, `break` and `continue` |
+| 5 | Functions | function declarations, arrow functions, default parameters, return values, scope |
+| 6 | Arrays | indexing, `push` and `pop`, `map` and `filter`, iterating arrays, spread syntax |
+| 7 | Objects | object literals, dot and bracket notation, methods, iterating objects, destructuring |
+| 8 | Error Handling | `try` and `catch`, `finally`, throwing errors, error types, common errors |
 
-A topic is **100% complete** when all three requirements are met:
+Courses and topics live in the `subjects` and `topics` collections and are seeded from
+`backend/app/db/seed.py` on startup. Nothing else in the code needs to change to add content:
+
+- **To add a course**, add an entry to `COURSES` with its name, description, code language, and
+  topics. Topic slugs must be unique across courses, so prefix them (e.g. `js-loops`).
+- **To add a topic**, append it to the end of its course's list and restart the backend. Append rather
+  than insert: existing topics keep their stored order number, so a topic inserted mid-list would share
+  a number with an existing one.
+
+Accounts created before courses existed are automatically on the Python course.
+
+### How completion works
+
+**A topic is 100% complete** when all four requirements are met:
 
 | Requirement | Share of the percentage |
 | --- | --- |
-| Answer at least 10 questions (first attempts in Practice, Quiz, or Final test) | 20% |
-| Get 9 of your last 10 answers right | 40% |
-| Answer every key concept correctly at least once | 40% |
+| Answer at least 10 questions (first attempts in Practice, Quiz, or tests) | 20% |
+| Get 9 of your last 10 answers right | 30% |
+| Answer every key concept correctly at least once | 30% |
+| Pass the topic's final test with 70% or more | 20% |
 
 Partial progress counts toward each share, and the percentage never shows 100% until every requirement
-is fully met. Each topic also gets a status (Not started, Needs more practice, In progress, Almost
-complete, Complete) and remarks that say exactly what's left. The thresholds are constants at the top
-of the completion section in `progress_service.py`.
+is fully met. Once the first three are done, the topic is marked "ready for the final test" and the
+recommendation points to it. Each topic also gets a status (Not started, Needs more practice, In
+progress, Almost complete, Complete) and remarks that say exactly what's left.
+
+**A course is complete** when every topic is complete **and** the course exam is passed with 70% or
+more. The course exam stays **locked** until every topic is complete. The backend refuses to start it
+early, and the app shows which topics are left. Topics count for 90% of the course percentage and the
+course exam for the remaining 10%.
+
+The pass mark and all thresholds are constants at the top of the completion section in
+`progress_service.py`.
+
+**Passing, failing and retakes** (constants in `progress_service.py`):
+
+| | Topic final test | Course exam |
+| --- | --- | --- |
+| Pass | 70% or more | 70% or more |
+| Fail | Below 70% | Below 70% |
+| After a fail | Retake right away; **3 failed attempts in a row lock it for 12 hours**, then 3 more tries | **Locked for 12 hours**, then retake |
+| After passing | Shows **Completed**; **2 new attempts** allowed | Shows **Completed**; can't be retaken |
+
+The best score is always kept, so a new attempt can never undo a completion. Locks are enforced by the
+backend, and the app shows a live countdown until the next attempt opens.
+
+Tests finished before results were recorded on progress are picked up automatically: on startup, the
+backend reads past test results and records each learner's best score and passes. It only ever raises a
+best score or marks a pass, so it's safe to run on every start.
+
+### Streaks, XP and badges
+
+All of this is calculated from data the app already stores (answers, Learn messages and test results),
+so existing learners get credit for past activity. Only earned badges are stored, so a badge keeps its
+unlock date.
+
+- **Streak:** a day counts when the learner answers at least one question or sends a Learn message. Days
+  use the browser's timezone. A streak stays alive until a whole day passes with no activity.
+- **XP:** +10 for a right first attempt, +2 for any other answer, +3 per Learn message, +50 per topic
+  test passed, +200 per course exam passed. Level *L* needs 50 × *L* × (*L* − 1) XP in total
+  (level 2 at 100 XP, level 3 at 300, level 4 at 600, …).
+- **Badges** are defined in `BADGES` in `gamification_service.py`; adding one is a single line.
+
+
 
 ## Architecture
 
@@ -104,13 +182,16 @@ Key design decisions:
 
 | Collection | Contents |
 | --- | --- |
-| `users` | Accounts and onboarding profile (password stored only as an Argon2 hash) |
-| `topics` | Course topics and their key concepts |
+| `users` | Accounts, onboarding profile, and learning plan (password stored only as an Argon2 hash) |
+| `subjects` | Courses (Python, JavaScript) and the code language each uses |
+| `topics` | Topics of each course and their key concepts |
 | `sessions` | Learn, Practice, and Quiz sessions; Learn chat history is stored here |
 | `questions` | Every generated question, including its correct answer (never sent early) |
 | `attempts` | Every answer submitted, including retries |
-| `topic_progress` | Per-learner, per-topic stats used for mastery, completion, and difficulty |
-| `final_tests` | Timed final tests: questions, autosaved answers, timing, and the result analysis |
+| `topic_progress` | Per-learner, per-topic stats used for mastery, completion, and difficulty, plus the best final test score |
+| `course_progress` | Per-learner, per-course exam results: best score and whether it was passed |
+| `user_badges` | Badges each learner has earned, with the date |
+| `final_tests` | Topic tests and course exams: questions, autosaved answers, review marks, timing, and the analysis |
 
 ## Technology stack
 
@@ -134,8 +215,8 @@ adaptive-ai-tutor/
 │   ├── .env.example
 │   ├── app/
 │   │   ├── main.py             # app factory, lifespan, error handling, CORS
-│   │   ├── api/                # thin routes: auth, profile, topics, sessions, tutor, final_tests,
-│   │   │                       #   progress, recommendations
+│   │   ├── api/                # thin routes: auth, profile, subjects (courses + plan), topics,
+│   │   │                       #   sessions, tutor, final_tests, progress, recommendations
 │   │   ├── core/               # config, security (hashing + JWT), dependencies, exceptions
 │   │   ├── db/                 # mongodb connection, indexes, topic seed data
 │   │   ├── models/             # shapes of documents stored in MongoDB
@@ -144,7 +225,9 @@ adaptive-ai-tutor/
 │   │   │   ├── ai_service.py               # the only code that calls Gemini (retries, fallback, timeouts)
 │   │   │   ├── tutor_service.py            # Learn lessons, practice questions, quizzes
 │   │   │   ├── evaluation_service.py       # grading and feedback for practice and quiz answers
-│   │   │   ├── final_test_service.py       # timed tests, autosave, grading, analysis
+│   │   │   ├── final_test_service.py       # topic tests and course exams: autosave, grading, analysis
+│   │   │   ├── subject_service.py          # courses and the learner's plan
+│   │   │   ├── gamification_service.py     # streaks, XP levels, badges, daily activity
 │   │   │   ├── progress_service.py         # accuracy, mastery, completion standard, difficulty
 │   │   │   ├── recommendation_service.py   # what to study next
 │   │   │   └── user/topic/session/question services  # one per collection
@@ -156,11 +239,13 @@ adaptive-ai-tutor/
     │   ├── globals.css         # colour tokens for light and dark themes
     │   ├── page.tsx            # landing page
     │   ├── (auth)/             # /login, /register
-    │   └── (app)/              # signed-in pages: onboarding, dashboard, topics, tutor, quiz,
-    │                           #   final-test, progress
-    ├── components/             # Navbar, Logo, ThemeToggle, Sidebar, ChatWindow, PracticePanel,
-    │                           #   QuizQuestion, FinalTestRunner, FinalTestResults, cards, ui
-    └── lib/                    # api client, auth context, types, labels
+    │   └── (app)/              # signed-in pages: onboarding, dashboard, courses, topics, tutor,
+    │                           #   quiz, final-test, progress, achievements
+    ├── components/             # Navbar, Logo, CourseSwitcher, ThemeToggle, Sidebar, ChatWindow,
+    │                           #   ChatHistory, PracticePanel, QuizQuestion, FinalTestRunner,
+    │                           #   FinalTestResults, CompletionChecklist, CourseExamStatus,
+    │                           #   Achievements, ActivityCharts, StreakChip, cards, ui
+    └── lib/                    # api client, auth and gamification contexts, types, labels
 ```
 
 `(auth)` and `(app)` are Next.js route groups: they share a layout but don't appear in the URL.
@@ -271,21 +356,29 @@ too. API clients can alternatively send `Authorization: Bearer <token>`.
 | POST | `/api/auth/logout` | Log out (clears cookie) |
 | GET | `/api/auth/me` | Current user |
 | GET / PUT | `/api/profile` | Read / save onboarding profile |
-| GET | `/api/topics` | All topics, in course order |
+| GET | `/api/subjects` | All courses, with whether each is in the learner's plan |
+| POST | `/api/plan/subjects/{slug}` | Add a course to the plan (and switch to it) |
+| DELETE | `/api/plan/subjects/{slug}` | Remove a course from the plan (progress is kept) |
+| PUT | `/api/plan/current` | Switch the current course |
+| GET | `/api/topics?subject=` | Topics of a course, in order (defaults to the current course) |
 | POST | `/api/sessions` | Start a learn / practice / quiz session (`resume: true` continues the last Learn chat) |
+| GET | `/api/sessions?topic_slug=` | Past Learn conversations for a topic, newest first |
 | GET | `/api/sessions/{id}` | Session with chat history |
 | POST | `/api/tutor/learn` | Send a message in Learn mode (empty message starts the lesson) |
 | POST | `/api/tutor/practice` | Generate one practice question |
 | POST | `/api/tutor/evaluate` | Grade an answer, update progress |
 | POST | `/api/tutor/quiz` | Generate a 5-question quiz for a quiz session |
 | GET | `/api/tutor/quiz/{session_id}/result` | Quiz score, strong areas, needs practice, recommendation |
-| POST | `/api/final-tests` | Start a timed final test for a topic |
+| POST | `/api/final-tests` | Start a topic test (`topic_slug`) or a course exam (`subject_slug`) |
 | GET | `/api/final-tests/{id}` | Load a test (auto-graded if its time ran out) |
 | PUT | `/api/final-tests/{id}/answers` | Autosave one answer |
+| PUT | `/api/final-tests/{id}/status` | Mark a question for review, or record that it was opened |
 | POST | `/api/final-tests/{id}/submit` | Submit, grade, and return the analysis |
-| GET | `/api/progress` | Overall and per-topic progress |
+| GET | `/api/progress?subject=` | Course and per-topic progress (defaults to the current course) |
 | GET | `/api/progress/{topic_slug}` | One topic's progress |
-| GET | `/api/recommendations` | What to study next |
+| GET | `/api/recommendations?subject=` | What to study next in a course |
+| GET | `/api/gamification?tz=` | Streak, XP level and badges (records newly earned badges) |
+| GET | `/api/activity?tz=&days=` | Questions, accuracy, Learn messages and XP per day, for the charts |
 | GET | `/api/health` | Health check (pings MongoDB) |
 
 ## Running the application
@@ -329,12 +422,22 @@ Covered:
 
 - **Auth:** registration, duplicate email, password hashing, login, invalid login, logout, protected
   endpoints, invalid tokens.
-- **Learning:** topic retrieval, Learn mode replies and resuming a conversation, practice evaluation
+- **Courses:** the default Python plan, adding, switching and removing courses, the last-course guard,
+  and choosing the first course during onboarding.
+- **Learning:** topic retrieval, Learn mode replies, resuming a conversation, conversation history, practice evaluation
   (including the fallback when the AI is unavailable), a full quiz flow, and quiz feedback without hints.
-- **Final test:** answers hidden until submit, grading and analysis, no one-by-one checking, double
-  submit counted once, and automatic grading after the time runs out.
+- **Final tests:** answers hidden until submit, grading and analysis, no one-by-one checking, double
+  submit counted once, automatic grading after the time runs out, review marks and visited status, and
+  a course exam covering every topic with results by topic, the course exam lock, passing tests
+  completing topics and courses, the 2 new attempts after passing, unlimited retakes before passing, and
+  no retaking a passed course exam, 3 failed attempts in a row locking a topic test (and unlocking after
+  the cooldown), the 12-hour course exam cooldown, a pass resetting the fail count, and the backfill of
+  older test results.
+- **Gamification:** streak counting (including the grace day), XP levels, timezone fallback, and a first
+  answer starting a streak, earning XP and unlocking a badge exactly once.
 - **Progress:** accuracy, mastery thresholds, difficulty adjustment, deterministic grading, the topic
-  completion standard and its remarks, and recommendations.
+  completion standard and its remarks (including the final test requirement), and recommendations
+  (including sending the learner to a final test or the course exam).
 - **AI service:** fallback to the second model, skipping a busy model, timeouts, and a rejected API key.
 
 Frontend type check:
@@ -358,12 +461,10 @@ npm run typecheck
 ## Future enhancements
 
 - Smarter adaptive difficulty (per-concept, spaced repetition)
-- A course-wide final exam across all topics
 - RAG over course notes or documentation
 - PDF upload to learn from your own material
-- History pages: browse past Learn conversations and final test results
-- Progress charts over time
-- Badges and learning streaks
+- A history page for past final test results
+- More courses (for example SQL), added through the seed data
 - Personalized study plans
 - Admin dashboard to manage topics and review AI output
 - Running learner code in a sandbox for coding exercises

@@ -5,7 +5,7 @@ from app.db.mongodb import get_database, to_object_id
 from app.models.enums import LearningMode, Level
 from app.models.session import ChatMessage, LearningSession
 from app.models.user import User
-from app.schemas.session import SessionCreate
+from app.schemas.session import SessionCreate, SessionSummary
 from app.services import progress_service, topic_service
 
 
@@ -47,6 +47,49 @@ async def get_latest_learn_session(user_id: str, topic_slug: str) -> LearningSes
         sort=[("updated_at", -1)],
     )
     return LearningSession.from_document(document) if document else None
+
+
+HISTORY_LIMIT = 30
+PREVIEW_LENGTH = 90
+
+
+async def list_learn_sessions(user_id: str, topic_slug: str) -> list[SessionSummary]:
+    """Past Learn conversations for a topic, newest first. Empty conversations are skipped."""
+    pipeline = [
+        {"$match": {"user_id": user_id, "topic_slug": topic_slug, "mode": LearningMode.LEARN.value, "messages.0": {"$exists": True}}},
+        {"$sort": {"updated_at": -1}},
+        {"$limit": HISTORY_LIMIT},
+        # Only the first few messages are needed for the preview, so the full history isn't loaded.
+        {
+            "$project": {
+                "difficulty": 1,
+                "created_at": 1,
+                "updated_at": 1,
+                "message_count": {"$size": "$messages"},
+                "first_messages": {"$slice": ["$messages", 4]},
+            }
+        },
+    ]
+    cursor = await get_database().sessions.aggregate(pipeline)
+    return [
+        SessionSummary(
+            id=str(document["_id"]),
+            difficulty=document["difficulty"],
+            message_count=document["message_count"],
+            preview=_conversation_preview(document["first_messages"]),
+            created_at=document["created_at"],
+            updated_at=document["updated_at"],
+        )
+        async for document in cursor
+    ]
+
+
+def _conversation_preview(messages: list[dict]) -> str:
+    """The learner's first question, or the opening of the tutor's first reply."""
+    first_student = next((m["content"] for m in messages if m["role"] == "student"), None)
+    text = first_student or messages[0]["content"]
+    text = " ".join(text.replace("#", "").replace("*", "").split())
+    return text if len(text) <= PREVIEW_LENGTH else text[: PREVIEW_LENGTH - 1].rstrip() + "…"
 
 
 async def get_session(user_id: str, session_id: str) -> LearningSession:

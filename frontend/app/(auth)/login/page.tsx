@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
+import PasswordInput from "@/components/PasswordInput";
 import { Alert } from "@/components/ui";
 import { errorMessage } from "@/lib/api";
 import { safeRedirectPath, useAuth } from "@/lib/auth";
@@ -73,11 +74,9 @@ function LoginForm() {
           <label htmlFor="password" className="block text-sm font-bold">
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
-            className="input"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />

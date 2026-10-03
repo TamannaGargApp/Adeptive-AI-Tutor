@@ -133,7 +133,7 @@ LOOPS = Topic(
 )
 
 
-def _loops_progress(answers: list[bool], covered: list[str]) -> TopicProgress:
+def _loops_progress(answers: list[bool], covered: list[str], test_passed: bool = False) -> TopicProgress:
     return TopicProgress(
         id="p1",
         user_id="u1",
@@ -143,6 +143,8 @@ def _loops_progress(answers: list[bool], covered: list[str]) -> TopicProgress:
         current_difficulty=Level.BEGINNER,
         concept_stats=[ConceptStat(concept=concept, attempted=1, correct=1) for concept in covered],
         last_answers=answers[-10:],
+        final_test_passed=test_passed,
+        best_final_test_accuracy=80.0 if test_passed else None,
     )
 
 
@@ -154,7 +156,7 @@ def test_untouched_topic_is_zero_percent():
 
 
 def test_all_requirements_met_is_100_percent():
-    progress = _loops_progress([False] + [True] * 9, LOOPS.key_concepts)
+    progress = _loops_progress([False] + [True] * 9, LOOPS.key_concepts, test_passed=True)
     completion = calculate_completion(LOOPS, progress)
     assert completion.percent == 100
     assert completion.completed is True
@@ -165,7 +167,7 @@ def test_missing_concept_blocks_completion():
     progress = _loops_progress([True] * 10, ["for loop", "range()", "while loop", "break and continue"])
     completion = calculate_completion(LOOPS, progress)
     assert completion.completed is False
-    assert completion.percent == 92
+    assert completion.percent == 74  # 20 questions + 30 accuracy + 24 concepts (4 of 5), no final test
     assert completion.concepts_remaining == ["nested loops"]
     assert any("nested loops" in remark for remark in completion.remarks)
 
@@ -184,7 +186,9 @@ def test_low_recent_accuracy_needs_more_practice():
 
 def test_recent_answers_matter_more_than_early_mistakes():
     early_mistakes_then_improvement = [False] * 5 + [True] * 10
-    completion = calculate_completion(LOOPS, _loops_progress(early_mistakes_then_improvement, LOOPS.key_concepts))
+    completion = calculate_completion(
+        LOOPS, _loops_progress(early_mistakes_then_improvement, LOOPS.key_concepts, test_passed=True)
+    )
     assert completion.completed is True
 
 
@@ -196,5 +200,13 @@ def test_ai_concept_names_are_matched_to_key_concepts():
 
 def test_requirements_checklist_reports_each_part():
     completion = calculate_completion(LOOPS, _loops_progress([True] * 4, ["for loop", "range()"]))
-    assert [requirement.met for requirement in completion.requirements] == [False, False, False]
-    assert [requirement.progress for requirement in completion.requirements] == ["4/10", "4/9", "2/5"]
+    assert [requirement.met for requirement in completion.requirements] == [False, False, False, False]
+    assert [requirement.progress for requirement in completion.requirements] == ["4/10", "4/9", "2/5", "Not taken"]
+
+
+def test_practice_alone_never_completes_a_topic():
+    completion = calculate_completion(LOOPS, _loops_progress([True] * 10, LOOPS.key_concepts))
+    assert completion.completed is False
+    assert completion.percent == 80
+    assert completion.ready_for_final_test is True
+    assert completion.remarks[0].startswith("Ready for the final test")

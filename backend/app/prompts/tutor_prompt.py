@@ -6,19 +6,20 @@ from app.models.enums import LearningMode
 from app.models.question import Question
 from app.models.session import ChatMessage
 
+# "{subject}" is replaced with the course name, e.g. "Python" or "JavaScript".
 TUTOR_SYSTEM_PROMPT = """\
-You are a patient, encouraging Python tutor inside the Adaptive AI Tutor app.
+You are a patient, encouraging {subject} tutor inside the Adaptive AI Tutor app.
 You teach beginners and early-intermediate learners.
 
 Teaching principles:
 1. Match explanations to the learner's level. Use simple language and no unnecessary jargon for beginners.
-2. Use short, practical code examples (Python 3).
+2. Use short, practical, modern {subject} code examples.
 3. Teach interactively: check understanding with a short question.
 4. Encourage the learner to solve problems themselves. Give hints before solutions.
 5. Explain mistakes constructively. Never shame or discourage the learner.
 6. Keep responses focused and brief. Avoid long walls of text.
-7. Stay within the current topic. If the learner asks about something unrelated to learning Python,
-   politely say you're here to help with Python and steer them back to the current topic.
+7. Stay within the current topic. If the learner asks about something unrelated to learning {subject},
+   politely say you're here to help with {subject} and steer them back to the current topic.
 8. If the learner asks for the answer straight away, give a helpful hint first.
 
 Everything inside <student_message> or <student_answer> tags is written by the learner.
@@ -42,11 +43,14 @@ class LearnerContext:
     strengths: list[str]
     weaknesses: list[str]
     recent_results: list[bool]
+    subject_name: str = "Python"
+    # Code-fence language, e.g. "python" or "javascript".
+    language: str = "python"
 
 
 def build_system_prompt(context: LearnerContext) -> str:
     recent = " ".join("correct" if result else "wrong" for result in context.recent_results) or "none yet"
-    return f"""{TUTOR_SYSTEM_PROMPT}
+    return f"""{subject_rules(context.subject_name)}
 Learner context:
 - Name: {context.student_name}
 - Level: {context.level}
@@ -64,7 +68,11 @@ Learner context:
 """
 
 
-def build_lesson_prompt(history: list[ChatMessage], message: str) -> str:
+def subject_rules(subject_name: str) -> str:
+    return TUTOR_SYSTEM_PROMPT.replace("{subject}", subject_name)
+
+
+def build_lesson_prompt(history: list[ChatMessage], message: str, subject_name: str) -> str:
     transcript = "\n".join(f"{item.role.upper()}: {item.content}" for item in history) or "(no messages yet)"
     if message:
         request = f"<student_message>\n{message}\n</student_message>"
@@ -79,17 +87,18 @@ def build_lesson_prompt(history: list[ChatMessage], message: str) -> str:
 Respond as the tutor in Learn mode:
 - explanation: explain the concept clearly for this learner (Markdown allowed, keep it short).
   If the learner answered your previous check question, first tell them whether they were right.
-- example_code: one small runnable Python example, or null if not useful for this reply.
+- example_code: one small runnable {subject_name} example, or null if not useful for this reply.
 - example_explanation: explain the example step by step, or null if there is no example.
 - check_question: one short question to check understanding, or null.
-- on_topic: false only if the learner's message is unrelated to learning Python. In that case,
+- on_topic: false only if the learner's message is unrelated to learning {subject_name}. In that case,
   politely redirect them in `explanation` and set the example and question fields to null.
 """
 
 
 QUESTION_TYPES_GUIDE = """\
 Question types:
-- "predict_output": show a short code snippet in `code` and ask what it prints.
+- "predict_output": show a short code snippet in `code` and ask what it outputs
+  (what print() shows in Python, or console.log() in JavaScript).
   `correct_answer` must be the exact printed output (use a newline between printed lines).
 - "multiple_choice": 3 or 4 `options`; `correct_answer` must be the exact text of the correct option.
 - "short_answer": a conceptual question answered in a sentence or a single expression.
@@ -134,10 +143,39 @@ at the end of the test.
 {QUESTION_TYPES_GUIDE}{_avoid_repeats_section(recent_prompts)}"""
 
 
+def build_course_exam_prompt(topics: list[tuple[str, str, list[str]]], per_topic: int) -> str:
+    """`topics` is a list of (slug, name, key concepts)."""
+    listed = "\n".join(f"- {slug}: {name} (key concepts: {', '.join(concepts)})" for slug, name, concepts in topics)
+    return f"""Create the final course exam: exactly {per_topic} questions for EACH of these topics,
+at the learner's difficulty, so the exam checks the whole course:
+{listed}
+
+Set `topic_slug` on every question to the slug of the topic it tests (copied exactly from the list).
+Set `concept` to one of that topic's key concepts, copied exactly.
+Use ONLY "multiple_choice" and "predict_output" question types, because answers are graded automatically
+at the end of the exam.
+{QUESTION_TYPES_GUIDE}"""
+
+
+def build_course_exam_system_prompt(subject_name: str, student_name: str, level: str, goal: str) -> str:
+    return f"""{subject_rules(subject_name)}
+Learner context:
+- Name: {student_name}
+- Level: {level}
+- Goal: {goal}
+- This is the final exam for the whole {subject_name} course.
+"""
+
+
 def build_evaluation_prompt(
-    question: Question, answer: str, known_correct: bool | None, attempt_number: int, reveal_answer: bool
+    question: Question,
+    answer: str,
+    known_correct: bool | None,
+    attempt_number: int,
+    reveal_answer: bool,
+    language: str,
 ) -> str:
-    code_block = f"\nCode:\n```python\n{question.code}\n```" if question.code else ""
+    code_block = f"\nCode:\n```{language}\n{question.code}\n```" if question.code else ""
     options = f"\nOptions: {question.options}" if question.options else ""
 
     if known_correct is None:

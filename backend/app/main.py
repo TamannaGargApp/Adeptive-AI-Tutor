@@ -7,12 +7,24 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth, final_tests, profile, progress, recommendations, sessions, topics, tutor
+from app.api import (
+    auth,
+    final_tests,
+    gamification,
+    profile,
+    progress,
+    recommendations,
+    sessions,
+    subjects,
+    topics,
+    tutor,
+)
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.indexes import create_indexes
 from app.db.mongodb import close_mongo_connection, connect_to_mongo, get_database
-from app.db.seed import seed_topics
+from app.db.seed import seed_courses
+from app.services import progress_service
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -23,7 +35,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     await connect_to_mongo(settings.mongodb_uri, settings.database_name)
     await create_indexes()
-    await seed_topics()
+    await seed_courses()
+    await progress_service.backfill_final_test_results()
     logger.info("Connected to MongoDB database '%s'", settings.database_name)
     if not settings.gemini_api_key:
         logger.warning("GEMINI_API_KEY is not set. Tutor features will return an error until it is.")
@@ -66,7 +79,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Adaptive AI Tutor API",
         version="0.1.0",
-        description="Personalized Python tutoring powered by Gemini.",
+        description="Personalized programming tutoring powered by Gemini.",
         lifespan=lifespan,
     )
 
@@ -79,7 +92,9 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type", "Authorization"],
     )
 
-    for module in (auth, profile, topics, sessions, tutor, final_tests, progress, recommendations):
+    for module in (
+        auth, profile, subjects, topics, sessions, tutor, final_tests, progress, recommendations, gamification
+    ):
         app.include_router(module.router)
 
     @app.get("/api/health", tags=["health"])
