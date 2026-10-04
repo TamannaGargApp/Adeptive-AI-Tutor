@@ -50,11 +50,16 @@ export default function CoursesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-3xl font-bold">Courses</h1>
-        <p className="mt-2 text-ink-soft">
-          Add courses to your learning plan, then switch between them from the course menu at the top.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">My courses</h1>
+          <p className="mt-2 text-ink-soft">
+            The courses in your learning plan. Switch between them here or from the course menu at the top.
+          </p>
+        </div>
+        <Link href="/explore" className="btn btn-secondary">
+          Browse all courses
+        </Link>
       </div>
 
       {error && <Alert>{error}</Alert>}
@@ -62,7 +67,8 @@ export default function CoursesPage() {
 
       {subjects && (
         <div className="grid gap-4 md:grid-cols-2">
-          {subjects.map((subject) => {
+          {/* Only courses in the plan; the full catalogue is on the Courses page. */}
+          {subjects.filter((subject) => subject.in_plan).map((subject) => {
             const progress = progressBySubject[subject.slug];
             const busy = busySlug === subject.slug;
             return (
@@ -97,16 +103,6 @@ export default function CoursesPage() {
                 )}
 
                 <div className="mt-auto flex flex-wrap gap-2">
-                  {!subject.in_plan && (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      disabled={busy}
-                      onClick={() => changePlan(subject.slug, () => api.addSubjectToPlan(subject.slug))}
-                    >
-                      {busy ? "Adding…" : "Add to my plan"}
-                    </button>
-                  )}
                   {subject.in_plan && !subject.current && (
                     <button
                       type="button"
@@ -140,7 +136,8 @@ export default function CoursesPage() {
       )}
 
       <p className="text-sm text-ink-soft">
-        Removing a course from your plan keeps your progress. Add it again any time to pick up where you left off.
+        Removing a course from your plan keeps your progress. Add it again from Courses any time to pick up where
+        you left off.
       </p>
     </div>
   );

@@ -1,7 +1,9 @@
 export type Level = "beginner" | "intermediate" | "advanced";
 export type LearningGoal = "learn_python" | "improve_problem_solving" | "interview_preparation";
 export type LearningMode = "learn" | "practice" | "quiz";
-export type QuestionType = "multiple_choice" | "predict_output" | "short_answer";
+/** Ways to study a topic in the tutor: reading notes, plus the three learning modes. */
+export type StudyMode = "read" | LearningMode;
+export type QuestionType = "multiple_choice" | "predict_output" | "short_answer" | "write_code";
 export type Mastery = "not_started" | "needs_practice" | "developing" | "strong" | "mastered";
 export type CompletionStatus = "not_started" | "needs_practice" | "in_progress" | "almost_complete" | "complete";
 
@@ -16,6 +18,7 @@ export interface User {
   /** Course slugs in the learner's plan, and the course currently shown across the app. */
   subjects: string[];
   current_subject: string;
+  is_admin: boolean;
   created_at: string;
 }
 
@@ -85,6 +88,22 @@ export interface Question {
   code: string | null;
   options: string[];
   concept: string;
+  /** Coding exercises only. */
+  starter_code: string | null;
+  test_cases: TestCase[];
+  /** Language the exercise runs in, e.g. "python" or "javascript". */
+  language: string;
+}
+
+export interface TestCase {
+  /** Expression whose printed value is checked, or "" to check the program's own output. */
+  input: string;
+  expected_output: string;
+}
+
+export interface TestRunResult {
+  passed: boolean;
+  output: string;
 }
 
 export interface EvaluationResult {
@@ -312,4 +331,97 @@ export interface ActivityDay {
 export interface ActivityHistory {
   timezone: string;
   days: ActivityDay[];
+}
+
+export interface FeedbackArea {
+  area: string;
+  why: string;
+  how: string;
+}
+
+export interface FeedbackReport {
+  subject_slug: string;
+  report: {
+    summary: string;
+    strengths: string[];
+    areas_to_improve: FeedbackArea[];
+    mistake_patterns: string[];
+    next_steps: string[];
+    encouragement: string;
+  };
+  created_at: string;
+  based_on_answers: number;
+  /** New answers exist since this report, so refreshing would add something. */
+  can_refresh: boolean;
+}
+
+export interface AdminStats {
+  users: number;
+  active_last_7_days: number;
+  questions_answered: number;
+  tests_submitted: number;
+  courses: { slug: string; name: string; archived: boolean; topics: number; learners: number }[];
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  is_admin: boolean;
+  subjects: string[];
+  questions_answered: number;
+  last_active: string | null;
+  created_at: string;
+}
+
+export interface AdminCourse {
+  slug: string;
+  name: string;
+  description: string;
+  language: string;
+  archived: boolean;
+  order: number;
+}
+
+export interface AdminTopic {
+  slug: string;
+  subject: string;
+  name: string;
+  description: string;
+  key_concepts: string[];
+  order: number;
+  archived: boolean;
+}
+
+export interface CourseInput {
+  name: string;
+  description: string;
+  language: string;
+  archived: boolean;
+}
+
+export interface TopicInput {
+  name: string;
+  description: string;
+  key_concepts: string[];
+  archived: boolean;
+}
+
+export interface TopicMaterial {
+  topic_slug: string;
+  topic_name: string;
+  content: string;
+  key_takeaways: string[];
+  updated_at: string;
+  edited: boolean;
+}
+
+export interface CourseDeletePreview {
+  slug: string;
+  name: string;
+  topics: number;
+  learners: number;
+  answers: number;
+  can_delete: boolean;
+  reason: string | null;
 }

@@ -16,6 +16,8 @@ def _question(number: int) -> QuestionResponse:
         explanation=f"Explanation {number}",
         concept="for loop" if number < 2 else "range()",
         hint="Think.",
+        starter_code=None,
+        test_cases=[],
     )
 
 
@@ -150,7 +152,7 @@ async def test_course_exam_is_locked_until_every_topic_is_complete(auth_client):
 
     progress = (await auth_client.get("/api/progress")).json()
     assert progress["course_exam_unlocked"] is False
-    assert len(progress["topics_remaining"]) == 9
+    assert len(progress["topics_remaining"]) == 10
 
 
 async def test_passing_the_topic_test_meets_the_final_requirement(auth_client, fake_ai):

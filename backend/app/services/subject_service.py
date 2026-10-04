@@ -7,13 +7,17 @@ from app.models.user import User
 DEFAULT_SUBJECT = "python"
 
 
-async def list_subjects() -> list[Subject]:
-    cursor = get_database().subjects.find().sort("order", 1)
+async def list_subjects(include_archived: bool = False) -> list[Subject]:
+    """Courses in display order. Archived courses are only included for admins."""
+    query: dict = {"deleted": {"$ne": True}}
+    if not include_archived:
+        query["archived"] = {"$ne": True}
+    cursor = get_database().subjects.find(query).sort("order", 1)
     return [Subject.from_document(document) async for document in cursor]
 
 
 async def get_subject(slug: str) -> Subject:
-    document = await get_database().subjects.find_one({"slug": slug})
+    document = await get_database().subjects.find_one({"slug": slug, "deleted": {"$ne": True}})
     if document is None:
         raise NotFoundError(f"Course '{slug}' was not found.")
     return Subject.from_document(document)

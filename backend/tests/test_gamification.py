@@ -48,6 +48,8 @@ QUESTION = QuestionResponse(
     explanation="It prints 1.",
     concept="for loop",
     hint="Look at the number.",
+    starter_code=None,
+    test_cases=[],
 )
 
 

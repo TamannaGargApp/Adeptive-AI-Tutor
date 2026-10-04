@@ -57,26 +57,17 @@ async def teach(user: User, session_id: str, message: str, ai: StructuredLLM) ->
 
     lesson = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
-        user_prompt=build_lesson_prompt(session.messages[-LESSON_HISTORY_LIMIT:], message, context.subject_name),
+        user_prompt=build_lesson_prompt(
+            session.messages[-LESSON_HISTORY_LIMIT:], message, context.subject_name, context.language
+        ),
         response_model=LessonResponse,
     )
 
     now = datetime.now(UTC)
-    reply = ChatMessage(role="tutor", content=format_lesson_markdown(lesson, context.language), created_at=now)
+    reply = ChatMessage(role="tutor", content=lesson.message.strip(), created_at=now)
     new_messages = [ChatMessage(role="student", content=message, created_at=now)] if message else []
     await session_service.append_messages(session.id, [*new_messages, reply])
     return LearnReply(session_id=session.id, reply=reply, lesson=lesson)
-
-
-def format_lesson_markdown(lesson: LessonResponse, language: str) -> str:
-    parts = [lesson.explanation.strip()]
-    if lesson.example_code:
-        parts.append(f"```{language}\n{lesson.example_code.strip()}\n```")
-    if lesson.example_explanation:
-        parts.append(lesson.example_explanation.strip())
-    if lesson.check_question:
-        parts.append(f"**Check your understanding:** {lesson.check_question.strip()}")
-    return "\n\n".join(parts)
 
 
 def align_concept(generated: QuestionResponse, key_concepts: list[str]) -> None:
@@ -108,6 +99,7 @@ async def generate_practice_question(user: User, session_id: str, ai: Structured
         mode=session.mode,
         difficulty=session.difficulty,
         generated=[generated],
+        language=context.language,
     )
     return question
 
@@ -135,6 +127,7 @@ async def generate_quiz(user: User, session_id: str, ai: StructuredLLM) -> tuple
         mode=session.mode,
         difficulty=session.difficulty,
         generated=quiz.questions[:QUIZ_LENGTH],
+        language=context.language,
     )
     await session_service.set_quiz_questions(session.id, [question.id for question in questions])
     return session, questions

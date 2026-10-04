@@ -6,6 +6,7 @@ for those, and grades short-answer questions where exact matching isn't possible
 """
 
 import logging
+import re
 from collections.abc import Iterable
 
 from app.core.exceptions import AIServiceError, AppError, ConflictError
@@ -15,7 +16,7 @@ from app.models.user import User
 from app.prompts.tutor_prompt import build_evaluation_prompt, build_system_prompt
 from app.schemas.progress import RecommendationResponse
 from app.schemas.quiz import QuizResult
-from app.schemas.tutor import EvaluateRequest, EvaluationResponse, EvaluationResult
+from app.schemas.tutor import EvaluateRequest, EvaluationResponse, EvaluationResult, TestRunResult
 from app.services import (
     progress_service,
     question_service,
@@ -37,13 +38,40 @@ def normalize_output(text: str) -> str:
     return " ".join(text.split())
 
 
+# Python prints types as <class 'bool'>; learners often write just bool.
+_CLASS_WRAPPER = re.compile(r"<class '([^']+)'>")
+
+
+def output_key(text: str) -> str:
+    """A canonical form of program output for lenient comparison: spacing, quotes and capitalization are
+    ignored, and <class 'x'> counts as x. So "<class 'bool'>" matches "bool", and "'hi'" matches "hi"."""
+    text = _CLASS_WRAPPER.sub(r"\1", text)
+    return re.sub(r"[\s'\"`]", "", text).lower()
+
+
 def grade_deterministically(question: Question, answer: str) -> bool | None:
     """Return True/False when the answer can be checked exactly, or None if the AI must grade it."""
     if question.question_type == QuestionType.MULTIPLE_CHOICE:
         return normalize_output(answer).lower() == normalize_output(question.correct_answer).lower()
     if question.question_type == QuestionType.PREDICT_OUTPUT:
-        return normalize_output(answer) == normalize_output(question.correct_answer)
+        return output_key(answer) == output_key(question.correct_answer)
     return None
+
+
+def grade_code_results(question: Question, results: list[TestRunResult] | None) -> tuple[bool, str]:
+    """A coding exercise is correct when every test case passed in the learner's browser.
+
+    The code runs in the browser (never on the server), so these results are reported by the client.
+    That's acceptable for practice; final tests and course exams never include coding exercises.
+    """
+    if not results or len(results) != len(question.test_cases):
+        raise AppError("Run the tests before submitting your code.")
+    lines = [
+        f"- {test.input or '(program output)'} -> expected {test.expected_output!r}, "
+        f"got {result.output.strip()!r}: {'passed' if result.passed else 'FAILED'}"
+        for test, result in zip(question.test_cases, results, strict=True)
+    ]
+    return all(result.passed for result in results), "\n".join(lines)
 
 
 def should_reveal_answer(question: Question, correct: bool | None, attempt_number: int) -> bool:
@@ -75,10 +103,20 @@ async def evaluate_submission(user: User, request: EvaluateRequest, ai: Structur
 
     answer = request.answer.strip()
     attempt_number = question.attempt_count + 1
-    known_correct = grade_deterministically(question, answer)
+    test_summary = None
+    if question.question_type == QuestionType.WRITE_CODE:
+        known_correct, test_summary = grade_code_results(question, request.test_results)
+    else:
+        known_correct = grade_deterministically(question, answer)
+        if question.question_type == QuestionType.PREDICT_OUTPUT and known_correct is False:
+            # Not even a formatting-tolerant match: let the AI judge whether it's the same result in
+            # different words (e.g. "boolean" for <class 'bool'>) rather than marking it wrong outright.
+            known_correct = None
     reveal = should_reveal_answer(question, known_correct, attempt_number)
 
-    ai_result = await _get_ai_feedback(ai, user, question, answer, known_correct, attempt_number, reveal)
+    ai_result = await _get_ai_feedback(
+        ai, user, question, answer, known_correct, attempt_number, reveal, test_summary
+    )
     correct = known_correct if known_correct is not None else ai_result.correct
     score = (100 if correct else 0) if known_correct is not None else ai_result.score
     reveal = reveal or correct
@@ -126,6 +164,7 @@ async def _get_ai_feedback(
     known_correct: bool | None,
     attempt_number: int,
     reveal: bool,
+    test_summary: str | None = None,
 ) -> EvaluationResponse:
     session = await session_service.get_session(user.id, question.session_id)
     context = await tutor_service.build_learner_context(user, session.topic_slug, session.difficulty, session.mode)
@@ -133,11 +172,14 @@ async def _get_ai_feedback(
         return await ai.generate_structured(
             system_prompt=build_system_prompt(context),
             user_prompt=build_evaluation_prompt(
-                question, answer, known_correct, attempt_number, reveal, context.language
+                question, answer, known_correct, attempt_number, reveal, context.language, test_summary
             ),
             response_model=EvaluationResponse,
         )
     except AIServiceError:
+        if known_correct is None and question.question_type == QuestionType.PREDICT_OUTPUT:
+            # Without the AI, a predict-output answer that didn't match even leniently counts as wrong.
+            return fallback_feedback(question, False, reveal)
         if known_correct is None:
             raise  # Short answers can't be graded without the AI.
         logger.warning("AI feedback unavailable, using fallback feedback for question %s", question.id)

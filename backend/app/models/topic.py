@@ -8,3 +8,5 @@ class Topic(MongoModel):
     key_concepts: list[str]
     order: int
     subject: str = "python"
+    # Archived content is hidden from learners but kept, so existing progress stays valid.
+    archived: bool = False

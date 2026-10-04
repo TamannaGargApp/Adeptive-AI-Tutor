@@ -10,6 +10,8 @@ PREDICT_QUESTION = QuestionResponse(
     explanation="range(3) produces 0, 1 and 2.",
     concept="range()",
     hint="range(n) starts counting at 0.",
+    starter_code=None,
+    test_cases=[],
 )
 
 
@@ -21,10 +23,7 @@ async def _start_session(client, mode: str, topic: str = "loops") -> str:
 
 async def test_learn_mode_returns_lesson_and_saves_history(auth_client, fake_ai):
     fake_ai.responses[LessonResponse] = LessonResponse(
-        explanation="A for loop repeats code for each item.",
-        example_code="for i in range(3):\n    print(i)",
-        example_explanation="It prints 0, 1 and 2.",
-        check_question="What does range(2) produce?",
+        message="A for loop repeats code for each item.\n\n```python\nfor i in range(3):\n    print(i)\n```",
         on_topic=True,
     )
     session_id = await _start_session(auth_client, "learn")
@@ -62,24 +61,54 @@ async def test_practice_question_hides_answer_and_tracks_progress(auth_client, f
     assert await database.attempts.count_documents({}) == 2
 
 
-async def test_ai_feedback_is_used_when_available(auth_client, fake_ai):
-    fake_ai.responses[QuestionResponse] = PREDICT_QUESTION
-    fake_ai.responses[EvaluationResponse] = EvaluationResponse(
-        correct=True,  # deliberately wrong: code grading must win over the AI verdict
-        score=100,
-        feedback="Close! Remember where range starts.",
-        hint="Think about the first value.",
+def _verdict(correct: bool, feedback: str) -> EvaluationResponse:
+    return EvaluationResponse(
+        correct=correct,
+        score=100 if correct else 0,
+        feedback=feedback,
+        hint=None if correct else "Think about the first value.",
         correct_answer=None,
         concept="range()",
         difficulty="beginner",
     )
-    session_id = await _start_session(auth_client, "practice")
-    question = (await auth_client.post("/api/tutor/practice", json={"session_id": session_id})).json()
 
-    result = (await auth_client.post("/api/tutor/evaluate", json={"question_id": question["id"], "answer": "1 2 3"})).json()
 
+async def _answer(client, fake_ai, answer: str) -> dict:
+    fake_ai.responses[QuestionResponse] = PREDICT_QUESTION
+    session_id = await _start_session(client, "practice")
+    question = (await client.post("/api/tutor/practice", json={"session_id": session_id})).json()
+    return (await client.post("/api/tutor/evaluate", json={"question_id": question["id"], "answer": answer})).json()
+
+
+async def test_output_formatting_differences_are_accepted_without_the_ai(auth_client, fake_ai):
+    # Quotes, spacing and capitalization don't matter; no AI verdict is configured or needed.
+    result = await _answer(auth_client, fake_ai, "'0'  '1'  '2'")
+    assert result["correct"] is True
+
+
+async def test_ai_decides_near_misses_on_predict_output(auth_client, fake_ai):
+    fake_ai.responses[EvaluationResponse] = _verdict(True, "Right result! The exact output is 0, 1 and 2 on separate lines.")
+    result = await _answer(auth_client, fake_ai, "zero, one, two")
+    assert result["correct"] is True
+    assert "exact output" in result["feedback"]
+
+
+async def test_ai_can_still_reject_a_different_result(auth_client, fake_ai):
+    fake_ai.responses[EvaluationResponse] = _verdict(False, "Close! Remember where range starts.")
+    result = await _answer(auth_client, fake_ai, "1 2 3")
     assert result["correct"] is False
     assert result["feedback"] == "Close! Remember where range starts."
+
+
+async def test_multiple_choice_is_never_overruled_by_the_ai(auth_client, fake_ai):
+    fake_ai.responses[QuestionResponse] = PREDICT_QUESTION.model_copy(
+        update={"question_type": "multiple_choice", "options": ["0 1 2", "1 2 3"], "correct_answer": "0 1 2", "code": None}
+    )
+    fake_ai.responses[EvaluationResponse] = _verdict(True, "Looks right.")
+    session_id = await _start_session(auth_client, "practice")
+    question = (await auth_client.post("/api/tutor/practice", json={"session_id": session_id})).json()
+    result = (await auth_client.post("/api/tutor/evaluate", json={"question_id": question["id"], "answer": "1 2 3"})).json()
+    assert result["correct"] is False
 
 
 async def test_quiz_flow_produces_result_and_recommendation(auth_client, fake_ai):
@@ -94,6 +123,8 @@ async def test_quiz_flow_produces_result_and_recommendation(auth_client, fake_ai
                 explanation="Because.",
                 concept=f"concept {number}",
                 hint="Think.",
+                starter_code=None,
+                test_cases=[],
             )
             for number in range(5)
         ]
@@ -140,9 +171,7 @@ async def test_quiz_feedback_shows_answer_without_hint(auth_client, fake_ai):
 
 
 async def test_learn_mode_resumes_the_latest_conversation(auth_client, fake_ai):
-    fake_ai.responses[LessonResponse] = LessonResponse(
-        explanation="Loops repeat code.", example_code=None, example_explanation=None, check_question=None, on_topic=True
-    )
+    fake_ai.responses[LessonResponse] = LessonResponse(message="Loops repeat code.", on_topic=True)
     first = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn", "resume": True})).json()
     await auth_client.post("/api/tutor/learn", json={"session_id": first["id"], "message": "Hi"})
 
@@ -156,9 +185,7 @@ async def test_learn_mode_resumes_the_latest_conversation(auth_client, fake_ai):
 
 
 async def test_learn_history_lists_past_conversations(auth_client, fake_ai):
-    fake_ai.responses[LessonResponse] = LessonResponse(
-        explanation="Loops repeat code.", example_code=None, example_explanation=None, check_question=None, on_topic=True
-    )
+    fake_ai.responses[LessonResponse] = LessonResponse(message="Loops repeat code.", on_topic=True)
     first = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()
     await auth_client.post("/api/tutor/learn", json={"session_id": first["id"], "message": "What is a while loop?"})
     second = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()

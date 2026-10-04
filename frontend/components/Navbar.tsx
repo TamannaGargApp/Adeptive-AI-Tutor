@@ -1,70 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { LogoMark } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
 
 import CourseSwitcher from "./CourseSwitcher";
+import ProfileMenu, { type NavItem } from "./ProfileMenu";
 import StreakChip from "./StreakChip";
 import ThemeToggle from "./ThemeToggle";
 
-const LINKS = [
+// The main pages live in the profile menu (name + ☰), keeping the header uncluttered.
+const MAIN_LINKS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/courses", label: "Courses" },
+  { href: "/courses", label: "My courses" },
   { href: "/topics", label: "Topics" },
   { href: "/tutor", label: "Tutor" },
   { href: "/final-test", label: "Final test" },
   { href: "/progress", label: "Progress" },
-  { href: "/achievements", label: "Achievements" },
 ];
 
+/**
+ * Left: logo and the course catalogue. Right: streak, course switcher, theme switcher, and the profile
+ * menu (name + ☰) holding the main pages, Achievements, Admin and log out.
+ */
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
+  const onboarded = Boolean(user?.onboarding_completed);
 
-  async function handleLogout() {
-    await logout();
-    router.replace("/login");
-  }
+  const linkClass = (href: string) =>
+    `whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-bold ${
+      pathname.startsWith(href) ? "bg-blue-tint text-blue-deep" : "text-ink-soft hover:text-ink"
+    }`;
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/dashboard" className="flex items-center text-ink">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
+        <Link href="/dashboard" className="flex shrink-0 items-center text-ink">
           <LogoMark height={48} />
         </Link>
-
-        {user?.onboarding_completed && (
-          <nav className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto" aria-label="Main">
-            {LINKS.map((link) => {
-              const active = pathname.startsWith(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-bold ${
-                    active ? "bg-blue-tint text-blue-deep" : "text-ink-soft hover:text-ink"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
+        {onboarded && (
+          <Link href="/explore" aria-current={pathname.startsWith("/explore") ? "page" : undefined} className={linkClass("/explore")}>
+            Courses
+          </Link>
         )}
 
-        <div className="ml-auto flex items-center gap-3 text-sm">
-          {user?.onboarding_completed && <StreakChip />}
-          {user?.onboarding_completed && <CourseSwitcher />}
+        <div className="ml-auto flex items-center gap-2">
+          {onboarded && <StreakChip />}
+          {onboarded && (
+            <div className="hidden sm:block">
+              <CourseSwitcher />
+            </div>
+          )}
           <ThemeToggle />
-          {user && <span className="hidden text-ink-soft md:inline">{user.name}</span>}
-          <button type="button" onClick={handleLogout} className="font-bold text-blue hover:text-blue-deep">
-            Log out
-          </button>
+          <ProfileMenu mainLinks={onboarded ? MAIN_LINKS : []} />
         </div>
       </div>
     </header>

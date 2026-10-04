@@ -1,6 +1,13 @@
 import type {
   ActivityHistory,
+  AdminCourse,
+  AdminStats,
+  AdminTopic,
+  AdminUserRow,
+  CourseDeletePreview,
+  CourseInput,
   EvaluationResult,
+  FeedbackReport,
   FinalTest,
   Gamification,
   LearnReply,
@@ -15,7 +22,10 @@ import type {
   Recommendation,
   SessionSummary,
   Subject,
+  TestRunResult,
+  TopicMaterial,
   Topic,
+  TopicInput,
   TopicProgress,
   User,
 } from "./types";
@@ -54,9 +64,9 @@ async function readErrorMessage(response: Response): Promise<string> {
 }
 
 // AI requests can legitimately take a while (the backend may retry or switch models), but never
-// forever. The backend gives up after 45 seconds, so this limit is only a safety net.
+// forever. The backend gives up after 55 seconds, so this limit is only a safety net.
 const DEFAULT_TIMEOUT_MS = 20_000;
-const AI_TIMEOUT_MS = 60_000;
+const AI_TIMEOUT_MS = 70_000;
 
 interface RequestOptions {
   method?: string;
@@ -94,6 +104,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (!response.ok) {
     throw new ApiError(await readErrorMessage(response), response.status);
   }
+  // 204 No Content (e.g. after a delete) has no body to parse.
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -129,6 +141,8 @@ export const api = {
     request<User>("/api/plan/current", { method: "PUT", body: { subject_slug: subjectSlug } }),
 
   // These default to the learner's current course when no course is given.
+  getTopicMaterial: (topicSlug: string) =>
+    request<TopicMaterial>(`/api/topics/${topicSlug}/material`, { timeoutMs: AI_TIMEOUT_MS }),
   getTopics: (subjectSlug?: string) => request<Topic[]>(`/api/topics${subjectQuery(subjectSlug)}`),
 
   createSession: (topicSlug: string, mode: LearningMode, difficulty?: Level, resume = false) =>
@@ -152,10 +166,10 @@ export const api = {
       body: { session_id: sessionId },
       timeoutMs: AI_TIMEOUT_MS,
     }),
-  evaluate: (questionId: string, answer: string) =>
+  evaluate: (questionId: string, answer: string, testResults?: TestRunResult[]) =>
     request<EvaluationResult>("/api/tutor/evaluate", {
       method: "POST",
-      body: { question_id: questionId, answer },
+      body: { question_id: questionId, answer, test_results: testResults ?? null },
       timeoutMs: AI_TIMEOUT_MS,
     }),
   createQuiz: (sessionId: string) =>
@@ -186,6 +200,37 @@ export const api = {
 
   getGamification: () => request<Gamification>(`/api/gamification?${timezoneQuery()}`),
   getActivity: (days = 30) => request<ActivityHistory>(`/api/activity?${timezoneQuery()}&days=${days}`),
+
+  getFeedback: () => request<FeedbackReport | null>("/api/feedback"),
+  createFeedback: () => request<FeedbackReport>("/api/feedback", { method: "POST", timeoutMs: AI_TIMEOUT_MS }),
+
+  admin: {
+    stats: () => request<AdminStats>("/api/admin/stats"),
+    users: () => request<AdminUserRow[]>("/api/admin/users"),
+    courses: () => request<AdminCourse[]>("/api/admin/courses"),
+    createCourse: (data: CourseInput) => request<AdminCourse>("/api/admin/courses", { method: "POST", body: data }),
+    updateCourse: (slug: string, data: CourseInput) =>
+      request<AdminCourse>(`/api/admin/courses/${slug}`, { method: "PUT", body: data }),
+    deletePreview: (slug: string) => request<CourseDeletePreview>(`/api/admin/courses/${slug}/delete-preview`),
+    deleteCourse: (slug: string) => request<void>(`/api/admin/courses/${slug}`, { method: "DELETE" }),
+    updateMaterial: (topicSlug: string, content: string, keyTakeaways: string[]) =>
+      request<TopicMaterial>(`/api/admin/topics/${topicSlug}/material`, {
+        method: "PUT",
+        body: { content, key_takeaways: keyTakeaways },
+      }),
+    regenerateMaterial: (topicSlug: string) =>
+      request<TopicMaterial>(`/api/admin/topics/${topicSlug}/material/regenerate`, {
+        method: "POST",
+        timeoutMs: AI_TIMEOUT_MS,
+      }),
+    topics: (courseSlug: string) => request<AdminTopic[]>(`/api/admin/courses/${courseSlug}/topics`),
+    createTopic: (courseSlug: string, data: TopicInput) =>
+      request<AdminTopic>("/api/admin/topics", { method: "POST", body: { ...data, subject_slug: courseSlug } }),
+    updateTopic: (slug: string, data: TopicInput) =>
+      request<AdminTopic>(`/api/admin/topics/${slug}`, { method: "PUT", body: data }),
+    moveTopic: (slug: string, direction: "up" | "down") =>
+      request<AdminTopic[]>(`/api/admin/topics/${slug}/move`, { method: "POST", body: { direction } }),
+  },
 
   getProgress: (subjectSlug?: string) => request<OverallProgress>(`/api/progress${subjectQuery(subjectSlug)}`),
   getTopicProgress: (topicSlug: string) => request<TopicProgress>(`/api/progress/${topicSlug}`),

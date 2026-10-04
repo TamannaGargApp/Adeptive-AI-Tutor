@@ -10,7 +10,7 @@ async def test_new_learner_starts_with_python(auth_client):
     by_slug = {subject["slug"]: subject for subject in subjects}
     assert by_slug["python"]["in_plan"] and by_slug["python"]["current"]
     assert by_slug["javascript"]["in_plan"] is False
-    assert by_slug["javascript"]["topic_count"] == 8
+    assert by_slug["javascript"]["topic_count"] == 9
 
 
 async def test_adding_a_course_switches_to_it(auth_client):
@@ -19,12 +19,12 @@ async def test_adding_a_course_switches_to_it(auth_client):
     assert user["current_subject"] == "javascript"
 
     topics = (await auth_client.get("/api/topics")).json()
-    assert len(topics) == 8
+    assert len(topics) == 9
     assert all(topic["subject"] == "javascript" for topic in topics)
 
     progress = (await auth_client.get("/api/progress")).json()
     assert progress["subject_name"] == "JavaScript"
-    assert len(progress["topics"]) == 8
+    assert len(progress["topics"]) == 9
 
 
 async def test_switching_and_removing_courses(auth_client):

@@ -24,5 +24,9 @@ class AuthenticationError(AppError):
     status_code = 401
 
 
+class ForbiddenError(AppError):
+    status_code = 403
+
+
 class AIServiceError(AppError):
     status_code = 503

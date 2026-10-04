@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import (
+    admin,
     auth,
+    feedback,
     final_tests,
     gamification,
     profile,
@@ -93,7 +95,8 @@ def create_app() -> FastAPI:
     )
 
     for module in (
-        auth, profile, subjects, topics, sessions, tutor, final_tests, progress, recommendations, gamification
+        auth, profile, subjects, topics, sessions, tutor, final_tests, progress, recommendations, gamification,
+        feedback, admin,
     ):
         app.include_router(module.router)
 

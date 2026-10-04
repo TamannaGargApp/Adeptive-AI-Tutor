@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import ActivityCharts from "@/components/ActivityCharts";
+import FeedbackPanel from "@/components/FeedbackPanel";
 import CourseExamStatus from "@/components/CourseExamStatus";
 import Modal from "@/components/Modal";
 import ProgressCard from "@/components/ProgressCard";
@@ -52,6 +53,8 @@ export default function ProgressPage() {
       {!progress && !error && <Spinner />}
 
       {progress && <CourseExamStatus progress={progress} />}
+
+      {progress && <FeedbackPanel subjectSlug={progress.subject_slug} />}
 
       <ActivityCharts />
 

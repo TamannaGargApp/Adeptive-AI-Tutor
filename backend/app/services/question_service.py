@@ -15,6 +15,7 @@ async def save_questions(
     mode: LearningMode,
     difficulty: Level,
     generated: list[QuestionResponse],
+    language: str = "python",
 ) -> list[Question]:
     """Store generated questions. `session_id` is the practice/quiz session or the final test id."""
     now = datetime.now(UTC)
@@ -26,6 +27,7 @@ async def save_questions(
             "topic_slug": topic_slug,
             "mode": mode.value,
             "difficulty": difficulty.value,
+            "language": language,
             "attempt_count": 0,
             "solved": False,
             "created_at": now,

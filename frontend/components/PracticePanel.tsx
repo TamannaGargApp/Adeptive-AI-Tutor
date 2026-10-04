@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "@/lib/api";
 import { useGamification } from "@/lib/gamification";
 import { LEVEL_LABELS } from "@/lib/labels";
-import type { EvaluationResult, LearningSession, Level, Question } from "@/lib/types";
+import type { EvaluationResult, LearningSession, Level, Question, TestRunResult } from "@/lib/types";
 
 import QuizQuestion from "./QuizQuestion";
 import { Alert } from "./ui";
@@ -33,7 +33,10 @@ export default function PracticePanel({ session, onDifficultyChange }: PracticeP
     setResult(null);
     setAnswer("");
     try {
-      setQuestion(await api.practice(session.id));
+      const next = await api.practice(session.id);
+      setQuestion(next);
+      // Coding exercises start from their starter code.
+      setAnswer(next.starter_code ?? "");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -49,12 +52,12 @@ export default function PracticePanel({ session, onDifficultyChange }: PracticeP
     void loadQuestion();
   }, [session.id, loadQuestion]);
 
-  async function submitAnswer() {
+  async function submitAnswer(testResults?: TestRunResult[]) {
     if (!question) return;
     setSubmitting(true);
     setError(null);
     try {
-      const evaluation = await api.evaluate(question.id, answer);
+      const evaluation = await api.evaluate(question.id, answer, testResults);
       setResult(evaluation);
       refreshGamification();
       if (evaluation.difficulty_changed) {

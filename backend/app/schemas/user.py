@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import LearningGoal, Level
+from app.core.config import get_settings
 from app.models.user import User
 from app.services.subject_service import current_subject, plan_subjects
 
@@ -19,6 +20,7 @@ class UserPublic(BaseModel):
     onboarding_completed: bool
     subjects: list[str]
     current_subject: str
+    is_admin: bool
     created_at: datetime
 
     @classmethod
@@ -27,6 +29,7 @@ class UserPublic(BaseModel):
         # Older accounts have no plan stored yet; they get the default course.
         data["subjects"] = plan_subjects(user)
         data["current_subject"] = current_subject(user)
+        data["is_admin"] = user.email.lower() in get_settings().admin_email_set
         return cls.model_validate(data)
 
 

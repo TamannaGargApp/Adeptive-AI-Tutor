@@ -1,15 +1,15 @@
 "use client";
 
 import { LEVEL_LABELS, LEVELS, MODE_DESCRIPTIONS, MODE_LABELS, MODES } from "@/lib/labels";
-import type { LearningMode, Level, Topic } from "@/lib/types";
+import type { Level, StudyMode, Topic } from "@/lib/types";
 
 interface SidebarProps {
   topics: Topic[];
   topicSlug: string;
-  mode: LearningMode;
+  mode: StudyMode;
   difficulty: Level | null;
   onTopicChange: (slug: string) => void;
-  onModeChange: (mode: LearningMode) => void;
+  onModeChange: (mode: StudyMode) => void;
   onDifficultyChange: (difficulty: Level) => void;
   /** On small screens the sidebar is a collapsible panel; on large screens it is always shown. */
   mobileOpen: boolean;
@@ -69,7 +69,7 @@ export default function Sidebar({
 
       <section>
         <h2 className="mb-2 text-sm font-bold text-ink-soft">Learning mode</h2>
-        <div className="grid grid-cols-3 gap-1 lg:grid-cols-1">
+        <div className="grid grid-cols-4 gap-1 lg:grid-cols-1">
           {MODES.map((item) => (
             <button
               key={item}

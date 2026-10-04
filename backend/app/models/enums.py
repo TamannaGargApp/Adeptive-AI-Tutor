@@ -24,6 +24,8 @@ class QuestionType(StrEnum):
     MULTIPLE_CHOICE = "multiple_choice"
     PREDICT_OUTPUT = "predict_output"
     SHORT_ANSWER = "short_answer"
+    # The learner writes code; it runs in their browser against the question's test cases.
+    WRITE_CODE = "write_code"
 
 
 class Mastery(StrEnum):

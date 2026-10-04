@@ -9,7 +9,15 @@ from datetime import UTC, datetime
 
 from app.db.mongodb import get_database
 
+# Each course starts with an introduction topic. It is first in its list and gets order 0, so the
+# existing topics keep their order numbers (1, 2, 3, …) in databases created before it was added.
 PYTHON_TOPICS: list[dict] = [
+    {
+        "slug": "python-introduction",
+        "name": "Introduction to Python",
+        "description": "What Python is, how to run a program, and writing your first lines of code.",
+        "key_concepts": ["what Python is", "running a program", "print()", "comments", "indentation and syntax"],
+    },
     {
         "slug": "variables-data-types",
         "name": "Variables & Data Types",
@@ -70,6 +78,12 @@ PYTHON_TOPICS: list[dict] = [
 
 
 JAVASCRIPT_TOPICS: list[dict] = [
+    {
+        "slug": "js-introduction",
+        "name": "Introduction to JavaScript",
+        "description": "What JavaScript is, where it runs, and writing your first lines of code.",
+        "key_concepts": ["what JavaScript is", "running JavaScript", "console.log()", "comments", "statements and semicolons"],
+    },
     {
         "slug": "js-variables-data-types",
         "name": "Variables & Data Types",
@@ -143,14 +157,17 @@ async def seed_courses() -> None:
     db = get_database()
     now = datetime.now(UTC)
     for course_order, course in enumerate(COURSES, start=1):
+        # A course an admin deleted stays deleted: it isn't recreated, and neither are its topics.
+        if await db.subjects.find_one({"slug": course["slug"], "deleted": True}):
+            continue
         details = {key: value for key, value in course.items() if key != "topics"}
         await db.subjects.update_one(
             {"slug": course["slug"]},
             {"$setOnInsert": {**details, "order": course_order, "created_at": now}},
             upsert=True,
         )
-        # Topic order is numbered within each course.
-        for order, topic in enumerate(course["topics"], start=1):
+        # Topic order is numbered within each course, starting at 0 for the introduction.
+        for order, topic in enumerate(course["topics"]):
             await db.topics.update_one(
                 {"slug": topic["slug"]},
                 {"$setOnInsert": {**topic, "order": order, "subject": course["slug"], "created_at": now}},

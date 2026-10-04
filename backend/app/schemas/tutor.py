@@ -10,17 +10,15 @@ import re
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.enums import Level, QuestionType
-from app.models.question import Question
+from app.models.question import Question, TestCase
 from app.models.session import ChatMessage
 
 # ---------- AI output schemas ----------
 
 
 class LessonResponse(BaseModel):
-    explanation: str
-    example_code: str | None
-    example_explanation: str | None
-    check_question: str | None
+    # The whole reply in Markdown, shaped to what the learner asked (not a fixed template).
+    message: str
     on_topic: bool
 
 
@@ -33,6 +31,8 @@ class QuestionResponse(BaseModel):
     explanation: str
     concept: str
     hint: str
+    starter_code: str | None
+    test_cases: list[TestCase]
 
     @field_validator("question_type")
     @classmethod
@@ -50,6 +50,13 @@ class QuestionResponse(BaseModel):
 
     @model_validator(mode="after")
     def check_options_match_type(self) -> "QuestionResponse":
+        if self.question_type == QuestionType.WRITE_CODE:
+            if not self.test_cases:
+                raise ValueError("Coding exercises need at least one test case.")
+            self.options = []
+            return self
+        self.test_cases = []
+        self.starter_code = None
         if self.question_type != QuestionType.MULTIPLE_CHOICE:
             self.options = []
             return self
@@ -116,15 +123,30 @@ class QuestionOut(BaseModel):
     code: str | None
     options: list[str]
     concept: str
+    # Coding exercises: starting code, the visible test cases, and the language to run them in.
+    # The reference solution is never included.
+    starter_code: str | None
+    test_cases: list[TestCase]
+    language: str
 
     @classmethod
     def from_question(cls, question: Question) -> "QuestionOut":
         return cls.model_validate(question.model_dump())
 
 
+class TestRunResult(BaseModel):
+    """One test case result from running the learner's code in their browser."""
+
+    passed: bool
+    output: str = Field(default="", max_length=2000)
+
+
 class EvaluateRequest(BaseModel):
     question_id: str
-    answer: str = Field(min_length=1, max_length=2000)
+    # For coding exercises this is the learner's code.
+    answer: str = Field(min_length=1, max_length=10000)
+    # Coding exercises only: one result per test case, in order.
+    test_results: list[TestRunResult] | None = Field(default=None, max_length=20)
 
 
 class EvaluationResult(BaseModel):

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     mongodb_uri: str = "mongodb://localhost:27017"
-    database_name: str = "adaptive_ai_tutor"
+    database_name: str = "ai_tutor"
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000"
     cookie_secure: bool = False
+    # Comma-separated emails of administrators. Admin access can only be granted here, never from the app.
+    admin_emails: str = ""
 
     @field_validator("jwt_secret_key")
     @classmethod
@@ -30,6 +32,10 @@ class Settings(BaseSettings):
                 'python -c "import secrets; print(secrets.token_urlsafe(48))"'
             )
         return value
+
+    @property
+    def admin_email_set(self) -> set[str]:
+        return {email.strip().lower() for email in self.admin_emails.split(",") if email.strip()}
 
     @property
     def cors_origin_list(self) -> list[str]:

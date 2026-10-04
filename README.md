@@ -12,11 +12,16 @@ off-topic requests are politely redirected.
 
 - **Accounts**: registration, login, logout, Argon2 password hashing, JWT in an httpOnly cookie.
 - **Onboarding**: name, first course, programming level, learning goal, preferred difficulty.
-- **Courses and learning plan**: add or remove courses on the Courses page and switch between them from
-  the course menu in the navbar. Every page shows the current course. Removing a course keeps its progress.
+- **Courses and learning plan**: the **Courses** page lists every course (open one for its topics and add
+  it to your plan); **My courses** shows only the courses in your plan, where you can switch or remove
+  them. Switch the current course from the course menu in the header; the main pages are in the menu behind your name (☰). Every page shows the current course. Removing a course keeps its progress.
 - **Dashboard**: course completion, questions attempted, correct answers, accuracy, completion and status
   for every topic, and a recommended next topic.
-- **Learn mode**: chat-style lessons: explanation, example, walkthrough of the example, and a check question.
+- **Read mode**: study notes for every topic covering each key concept, with runnable examples, common
+  mistakes and key takeaways. Written by the AI on first use, then stored and shared; admins can edit or
+  regenerate them.
+- **Learn mode**: a chat tutor that answers what the learner actually asks, in tidy Markdown: explanations,
+  examples, or sets of exercises (without giving away the answers before they're attempted).
   Conversations are saved and resumed per topic. "History" lists past conversations to reopen, and
   "New conversation" starts fresh.
 - **Practice mode**: one question at a time; wrong answers get feedback and a hint. The answer is revealed
@@ -42,6 +47,15 @@ off-topic requests are politely redirected.
   scores and the final test).
 - **Progress charts**: questions per day (correct vs incorrect), first-try accuracy over time, and a
   30-day streak calendar.
+- **Voice tutoring**: speak to the tutor (🎤), hear any reply read aloud (🔊), or turn on Voice mode to do
+  both automatically. Uses the browser's built-in speech features (speaking works in Chrome and Edge).
+- **Code execution**: tutor code examples have a ▶ Run button, and Practice includes write-code exercises
+  with test cases. Code runs in the learner's browser (Python via Pyodide, JavaScript in a Web Worker),
+  never on the server.
+- **Personalized feedback**: an AI coach report on the Progress page, built from the learner's actual
+  mistakes and progress: strengths, mistake patterns, areas to improve (why and how), and next steps.
+- **Admin dashboard**: platform stats, a learner list, and course/topic management (create, edit, reorder,
+  archive). Admins are set with `ADMIN_EMAILS`.
 - **Light, dark, and system themes**, remembered per browser.
 - **Adaptive difficulty**: 3 correct in a row moves up a level; 2 misses in the last 3 moves down.
 - **Recommendations**: deterministic rules (review weak topics → continue the course → strengthen → challenge).
@@ -50,10 +64,13 @@ off-topic requests are politely redirected.
 
 Each course has its own topics, and each topic has key concepts.
 
-**Python** (9 topics)
+Each course starts with an introduction topic (order 0).
+
+**Python** (10 topics)
 
 | # | Topic | Key concepts |
 | --- | --- | --- |
+| 0 | Introduction to Python | what Python is, running a program, `print()`, comments, indentation and syntax |
 | 1 | Variables & Data Types | variable assignment, int and float, strings, booleans, `type()`, type conversion |
 | 2 | Operators | arithmetic, integer division and modulo, comparison, logical, operator precedence |
 | 3 | Conditional Statements | `if`, `elif` chains, `else`, nested conditions, truthiness |
@@ -64,10 +81,11 @@ Each course has its own topics, and each topic has key concepts.
 | 8 | Exception Handling | `try`/`except`, specific exception types, `else` and `finally`, raising exceptions, common errors |
 | 9 | File Handling | opening files, file modes, reading files, writing files, `with` statement, handling file errors |
 
-**JavaScript** (8 topics)
+**JavaScript** (9 topics)
 
 | # | Topic | Key concepts |
 | --- | --- | --- |
+| 0 | Introduction to JavaScript | what JavaScript is, running JavaScript, `console.log()`, comments, statements and semicolons |
 | 1 | Variables & Data Types | `let` and `const`, numbers, strings, booleans, `typeof`, `null` and `undefined` |
 | 2 | Operators | arithmetic, comparison, strict equality, logical operators, type coercion |
 | 3 | Conditional Statements | `if` and `else`, `else if`, ternary operator, `switch`, truthy and falsy values |
@@ -165,6 +183,10 @@ Key design decisions:
 - **AI output is structured.** Gemini is given Pydantic models as response schemas (`LessonResponse`,
   `QuestionResponse`, `EvaluationResponse`, `QuizResponse`), and every response is validated again on our
   side. Malformed responses are retried once, then reported as a friendly error.
+- **Formatting doesn't make a right answer wrong.** "Predict the output" answers are compared ignoring
+  spacing, quotes, capitalization and the `<class '…'>` wrapper. In Practice and quizzes, an answer that
+  still doesn't match is judged by the AI, which accepts the same result in different words (e.g.
+  "boolean" for `<class 'bool'>`) and shows the exact output. Final tests use only the formatting rules.
 - **Correctness doesn't depend on the AI where it doesn't have to.** Multiple-choice and "predict the
   output" answers are graded in code (whitespace-tolerant), so a learner can't argue the AI into marking
   them right. The AI writes the feedback and grades open-ended short answers.
@@ -175,6 +197,14 @@ Key design decisions:
 - **Final tests reveal nothing early.** Their questions can't be checked through the normal evaluate
   endpoint. Answers are autosaved and graded together on submit, or automatically once the time runs
   out, even if the browser was closed.
+- **Learner code never runs on the server.** Coding exercises run in the browser and report their test
+  results. Because those results come from the browser, coding exercises are part of Practice only;
+  final tests and course exams stay fully server-graded.
+- **Deleting is deliberate.** Archiving hides content and keeps learner data; deleting a course (after
+  typing its name to confirm) removes it with all its learner data. Deleted built-in courses aren't
+  recreated on restart. The default course can only be archived.
+- **Admins are configured, not promoted.** Admin access comes only from `ADMIN_EMAILS`, and every admin
+  route checks it on the server.
 - **Themes use CSS variables.** Components use colour tokens (`ink`, `surface`, `blue`, …) that switch
   values in dark mode, so no component needs dark-specific classes.
 
@@ -191,6 +221,8 @@ Key design decisions:
 | `topic_progress` | Per-learner, per-topic stats used for mastery, completion, and difficulty, plus the best final test score |
 | `course_progress` | Per-learner, per-course exam results: best score and whether it was passed |
 | `user_badges` | Badges each learner has earned, with the date |
+| `topic_materials` | Study notes for each topic (shared by all learners) |
+| `feedback_reports` | Personalized feedback reports, so they're only regenerated after new answers |
 | `final_tests` | Topic tests and course exams: questions, autosaved answers, review marks, timing, and the analysis |
 
 ## Technology stack
@@ -308,6 +340,7 @@ cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | no | `60` |
 | `CORS_ORIGINS` | no | Comma-separated. Defaults to `http://localhost:3000` |
 | `COOKIE_SECURE` | no | Set to `true` when served over HTTPS |
+| `ADMIN_EMAILS` | no | Comma-separated emails that get the Admin dashboard. Admin access can't be granted from the app |
 
 Generate a JWT secret:
 
@@ -377,6 +410,13 @@ too. API clients can alternatively send `Authorization: Bearer <token>`.
 | GET | `/api/progress?subject=` | Course and per-topic progress (defaults to the current course) |
 | GET | `/api/progress/{topic_slug}` | One topic's progress |
 | GET | `/api/recommendations?subject=` | What to study next in a course |
+| GET / POST | `/api/feedback?subject=` | Latest personalized feedback report / generate a new one |
+| GET | `/api/admin/stats`, `/api/admin/users` | Admin: platform statistics and learners |
+| GET / POST / PUT | `/api/admin/courses`, `/api/admin/topics` | Admin: manage courses and topics (archive instead of delete) |
+| GET / DELETE | `/api/admin/courses/{slug}/delete-preview`, `/api/admin/courses/{slug}` | Admin: preview, then permanently delete a course and its learner data |
+| PUT / POST | `/api/admin/topics/{slug}/material`, `…/material/regenerate` | Admin: edit or regenerate a topic's study notes |
+| GET | `/api/topics/{slug}/material` | A topic's study notes (written by the AI on first request) |
+| POST | `/api/admin/topics/{slug}/move` | Admin: move a topic up or down in its course |
 | GET | `/api/gamification?tz=` | Streak, XP level and badges (records newly earned badges) |
 | GET | `/api/activity?tz=&days=` | Questions, accuracy, Learn messages and XP per day, for the charts |
 | GET | `/api/health` | Health check (pings MongoDB) |
@@ -433,6 +473,9 @@ Covered:
   no retaking a passed course exam, 3 failed attempts in a row locking a topic test (and unlocking after
   the cooldown), the 12-hour course exam cooldown, a pass resetting the fail count, and the backfill of
   older test results.
+- **New features:** coding exercises showing tests but not the solution and being graded from test
+  results, admin-only access, content management (create, reorder, archive), and feedback reports
+  needing enough answers and not being regenerated without new ones.
 - **Gamification:** streak counting (including the grace day), XP levels, timezone fallback, and a first
   answer starting a streak, earning XP and unlocking a badge exactly once.
 - **Progress:** accuracy, mastery thresholds, difficulty adjustment, deterministic grading, the topic
@@ -466,6 +509,5 @@ npm run typecheck
 - A history page for past final test results
 - More courses (for example SQL), added through the seed data
 - Personalized study plans
-- Admin dashboard to manage topics and review AI output
-- Running learner code in a sandbox for coding exercises
+- Admin review of AI-generated questions
 - Login rate limiting and CSRF tokens before any public deployment

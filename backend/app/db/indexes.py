@@ -15,6 +15,8 @@ async def create_indexes() -> None:
     )
     await db.course_progress.create_index([("user_id", ASCENDING), ("subject_slug", ASCENDING)], unique=True)
     await db.user_badges.create_index([("user_id", ASCENDING), ("badge_id", ASCENDING)], unique=True)
+    await db.feedback_reports.create_index([("user_id", ASCENDING), ("subject_slug", ASCENDING), ("created_at", DESCENDING)])
+    await db.topic_materials.create_index("topic_slug", unique=True)
     await db.final_tests.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
     await db.questions.create_index([("user_id", ASCENDING), ("session_id", ASCENDING)])
     await db.attempts.create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])

@@ -10,3 +10,5 @@ class Subject(MongoModel):
     # Used for code examples and prompts, e.g. "python" or "javascript".
     language: str
     order: int
+    # Archived content is hidden from learners but kept, so existing progress stays valid.
+    archived: bool = False

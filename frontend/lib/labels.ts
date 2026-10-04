@@ -1,4 +1,4 @@
-import type { CompletionStatus, LearningGoal, LearningMode, Level, Mastery } from "./types";
+import type { CompletionStatus, LearningGoal, Level, Mastery, StudyMode } from "./types";
 
 export const LEVEL_LABELS: Record<Level, string> = {
   beginner: "Beginner",
@@ -12,13 +12,15 @@ export const GOAL_LABELS: Record<LearningGoal, string> = {
   interview_preparation: "Interview preparation",
 };
 
-export const MODE_LABELS: Record<LearningMode, string> = {
+export const MODE_LABELS: Record<StudyMode, string> = {
+  read: "Read",
   learn: "Learn",
   practice: "Practice",
   quiz: "Quiz",
 };
 
-export const MODE_DESCRIPTIONS: Record<LearningMode, string> = {
+export const MODE_DESCRIPTIONS: Record<StudyMode, string> = {
+  read: "Study notes for the whole topic",
   learn: "Explanations and examples at your pace",
   practice: "One question at a time, with hints",
   quiz: "Five questions and a score",
@@ -41,10 +43,10 @@ export const COMPLETION_LABELS: Record<CompletionStatus, string> = {
 };
 
 export const LEVELS: Level[] = ["beginner", "intermediate", "advanced"];
-export const MODES: LearningMode[] = ["learn", "practice", "quiz"];
+export const MODES: StudyMode[] = ["read", "learn", "practice", "quiz"];
 
 /** Where to send the learner for a given topic and mode. Quizzes have their own page. */
-export function studyLink(topicSlug: string, mode: LearningMode): string {
+export function studyLink(topicSlug: string, mode: StudyMode): string {
   const path = mode === "quiz" ? "/quiz" : "/tutor";
   const query = new URLSearchParams({ topic: topicSlug });
   if (mode !== "quiz") query.set("mode", mode);

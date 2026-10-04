@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 
 from app.core.config import get_settings
-from app.core.exceptions import AuthenticationError
+from app.core.exceptions import AuthenticationError, ForbiddenError
 from app.core.security import AUTH_COOKIE_NAME, decode_access_token
 from app.models.user import User
 from app.services import user_service
@@ -37,6 +37,17 @@ async def get_current_user(request: Request) -> User:
     return user
 
 
+def is_admin(user: User) -> bool:
+    return user.email.lower() in get_settings().admin_email_set
+
+
+async def get_admin_user(request: Request) -> User:
+    user = await get_current_user(request)
+    if not is_admin(user):
+        raise ForbiddenError("This area is for administrators only.")
+    return user
+
+
 _ai_service: GeminiAIService | None = None
 
 
@@ -54,4 +65,5 @@ def get_ai_service() -> StructuredLLM:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+AdminUser = Annotated[User, Depends(get_admin_user)]
 AIDependency = Annotated[StructuredLLM, Depends(get_ai_service)]

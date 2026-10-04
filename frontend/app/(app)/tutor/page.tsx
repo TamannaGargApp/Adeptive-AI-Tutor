@@ -6,12 +6,13 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import ChatHistory from "@/components/ChatHistory";
 import ChatWindow from "@/components/ChatWindow";
 import PracticePanel from "@/components/PracticePanel";
+import ReadingPanel from "@/components/ReadingPanel";
 import Sidebar from "@/components/Sidebar";
 import { Alert, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { MODE_LABELS, studyLink } from "@/lib/labels";
-import type { LearningMode, LearningSession, Level, Topic } from "@/lib/types";
+import type { LearningMode, LearningSession, Level, StudyMode, Topic } from "@/lib/types";
 
 function TutorWorkspace() {
   const searchParams = useSearchParams();
@@ -33,7 +34,8 @@ function TutorWorkspace() {
   const requestedTopic = searchParams.get("topic");
   const topicSlug =
     (requestedTopic && topics?.some((item) => item.slug === requestedTopic) ? requestedTopic : topics?.[0]?.slug) ?? "";
-  const mode: LearningMode = searchParams.get("mode") === "practice" ? "practice" : "learn";
+  const requestedMode = searchParams.get("mode");
+  const mode: StudyMode = requestedMode === "practice" || requestedMode === "read" ? requestedMode : "learn";
   const topic = topics?.find((item) => item.slug === topicSlug);
   // Right after switching topic or mode, `session` still holds the previous one until the new
   // session arrives. Only use it when it matches what's on screen, or a practice panel could
@@ -50,7 +52,8 @@ function TutorWorkspace() {
   }, [user?.current_subject]);
 
   useEffect(() => {
-    if (!topicSlug) return;
+    // Read mode shows study notes and needs no learning session.
+    if (!topicSlug || mode === "read") return;
     const key = `${topicSlug}|${mode}|${requestedDifficulty ?? "auto"}|${sessionVersion}`;
     // Skip duplicate runs (e.g. React's development double-render) for the same session request.
     if (sessionKeyRef.current === key) return;
@@ -60,7 +63,7 @@ function TutorWorkspace() {
     startFreshRef.current = false;
     setError(null);
     api
-      .createSession(topicSlug, mode, requestedDifficulty ?? undefined, resume)
+      .createSession(topicSlug, mode as LearningMode, requestedDifficulty ?? undefined, resume)
       .then((created) => {
         // Ignore responses for a topic or mode the learner has already switched away from.
         if (sessionKeyRef.current === key) setSession(created);
@@ -76,7 +79,7 @@ function TutorWorkspace() {
     router.replace(studyLink(slug, mode));
   }
 
-  function changeMode(nextMode: LearningMode) {
+  function changeMode(nextMode: StudyMode) {
     setSettingsOpen(false);
     if (nextMode === "quiz") router.push(studyLink(topicSlug, "quiz"));
     else router.replace(studyLink(topicSlug, nextMode));
@@ -168,7 +171,12 @@ function TutorWorkspace() {
             </button>
           </div>
         )}
-        {!activeSession && !error && (
+        {mode === "read" && topicSlug && (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <ReadingPanel key={topicSlug} topicSlug={topicSlug} />
+          </div>
+        )}
+        {mode !== "read" && !activeSession && !error && (
           <div className="p-6">
             <Spinner label="Setting up your session…" />
           </div>

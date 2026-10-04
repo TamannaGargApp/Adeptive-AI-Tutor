@@ -210,3 +210,13 @@ def test_practice_alone_never_completes_a_topic():
     assert completion.percent == 80
     assert completion.ready_for_final_test is True
     assert completion.remarks[0].startswith("Ready for the final test")
+
+
+def test_output_comparison_ignores_formatting():
+    from app.services.evaluation_service import output_key
+
+    assert output_key("<class 'bool'>") == output_key("bool")
+    assert output_key("'hello'") == output_key("hello")
+    assert output_key("True") == output_key("true")
+    assert output_key("[1, 2, 3]") == output_key("[1,2,3]")
+    assert output_key("bool") != output_key("int")

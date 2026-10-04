@@ -1,7 +1,8 @@
 "use client";
 
-import type { EvaluationResult, Question } from "@/lib/types";
+import type { EvaluationResult, Question, TestRunResult } from "@/lib/types";
 
+import CodeExercise from "./CodeExercise";
 import Markdown from "./Markdown";
 import { CodeBlock } from "./ui";
 
@@ -9,7 +10,8 @@ interface QuizQuestionProps {
   question: Question;
   answer: string;
   onAnswerChange: (answer: string) => void;
-  onSubmit: () => void;
+  /** Coding exercises pass their browser test results; other question types pass nothing. */
+  onSubmit: (testResults?: TestRunResult[]) => void;
   submitting: boolean;
   /** True once the question can no longer be answered (solved, or out of attempts). */
   locked: boolean;
@@ -56,60 +58,71 @@ export default function QuizQuestion({
         {question.code && <CodeBlock code={question.code} />}
       </div>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (canSubmit) onSubmit();
-        }}
-        className="space-y-3"
-      >
-        {question.question_type === "multiple_choice" ? (
-          <fieldset className="space-y-2" disabled={locked || submitting}>
-            <legend className="mb-2 text-sm font-bold">{INPUT_LABELS.multiple_choice}</legend>
-            {question.options.map((option) => (
-              <label
-                key={option}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 ${
-                  answer === option ? "border-blue bg-blue-tint" : "border-line bg-surface hover:border-blue/50"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={inputId}
-                  value={option}
-                  checked={answer === option}
-                  onChange={() => onAnswerChange(option)}
-                  className="accent-blue"
-                />
-                <span className="font-mono text-sm">{option}</span>
+      {question.question_type === "write_code" ? (
+        <CodeExercise
+          question={question}
+          code={answer}
+          onCodeChange={onAnswerChange}
+          onSubmit={onSubmit}
+          submitting={submitting}
+          locked={locked}
+        />
+      ) : (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canSubmit) onSubmit();
+          }}
+          className="space-y-3"
+        >
+          {question.question_type === "multiple_choice" ? (
+            <fieldset className="space-y-2" disabled={locked || submitting}>
+              <legend className="mb-2 text-sm font-bold">{INPUT_LABELS.multiple_choice}</legend>
+              {question.options.map((option) => (
+                <label
+                  key={option}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 ${
+                    answer === option ? "border-blue bg-blue-tint" : "border-line bg-surface hover:border-blue/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={inputId}
+                    value={option}
+                    checked={answer === option}
+                    onChange={() => onAnswerChange(option)}
+                    className="accent-blue"
+                  />
+                  <span className="font-mono text-sm">{option}</span>
+                </label>
+              ))}
+            </fieldset>
+          ) : (
+            <div className="space-y-2">
+              <label htmlFor={inputId} className="block text-sm font-bold">
+                {INPUT_LABELS[question.question_type]}
               </label>
-            ))}
-          </fieldset>
-        ) : (
-          <div className="space-y-2">
-            <label htmlFor={inputId} className="block text-sm font-bold">
-              {INPUT_LABELS[question.question_type]}
-            </label>
-            <textarea
-              id={inputId}
-              value={answer}
-              onChange={(event) => onAnswerChange(event.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={locked || submitting}
-              rows={question.question_type === "predict_output" ? 3 : 4}
-              maxLength={2000}
-              className={`input resize-y ${question.question_type === "predict_output" ? "font-mono" : ""}`}
-              placeholder={question.question_type === "predict_output" ? "0\n1\n2" : "Explain in your own words"}
-            />
-          </div>
-        )}
+              <textarea
+                id={inputId}
+                value={answer}
+                onChange={(event) => onAnswerChange(event.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={locked || submitting}
+                rows={question.question_type === "predict_output" ? 3 : 4}
+                maxLength={2000}
+                className={`input resize-y ${question.question_type === "predict_output" ? "font-mono" : ""}`}
+                placeholder={question.question_type === "predict_output" ? "0\n1\n2" : "Explain in your own words"}
+              />
+            </div>
+          )}
 
-        {showSubmit && !locked && (
-          <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
-            {submitting ? "Checking…" : result && !result.correct ? "Check again" : "Check answer"}
-          </button>
-        )}
-      </form>
+          {showSubmit && !locked && (
+            <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+              {submitting ? "Checking…" : result && !result.correct ? "Check again" : "Check answer"}
+            </button>
+          )}
+        </form>
+      )}
 
       {result && <Feedback result={result} />}
     </div>
