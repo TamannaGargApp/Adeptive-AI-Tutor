@@ -96,10 +96,33 @@ class EvaluationResponse(BaseModel):
 # ---------- API request / response schemas ----------
 
 
+MAX_ATTACHMENTS = 3
+MAX_ATTACHMENT_CHARS = 60_000
+MAX_TOTAL_ATTACHMENT_CHARS = 120_000
+
+
+class AttachmentIn(BaseModel):
+    """A file the learner attached, as text extracted in their browser. Used for one request only."""
+
+    name: str = Field(min_length=1, max_length=200)
+    text: str = Field(max_length=MAX_ATTACHMENT_CHARS)
+    # True when this file is attached with the current message (rather than an earlier one).
+    new: bool = False
+
+
 class LearnRequest(BaseModel):
     session_id: str
     # Empty message means "start the lesson".
     message: str = Field(default="", max_length=2000)
+    # Files attached to this conversation. The browser keeps them and resends them with every
+    # question so follow-ups work; the server never stores their content.
+    attachments: list[AttachmentIn] = Field(default_factory=list, max_length=MAX_ATTACHMENTS)
+
+    @model_validator(mode="after")
+    def limit_total_size(self) -> "LearnRequest":
+        if sum(len(item.text) for item in self.attachments) > MAX_TOTAL_ATTACHMENT_CHARS:
+            raise ValueError("The attached files are too long together. Remove one and try again.")
+        return self
 
 
 class LearnReply(BaseModel):

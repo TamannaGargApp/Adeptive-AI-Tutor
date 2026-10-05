@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 
-from app.core.dependencies import CurrentUser
+from app.core.dependencies import CurrentUser, is_admin
 from app.schemas.session import SessionCreate, SessionOut, SessionSummary
 from app.services import session_service
 
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 @router.post("", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
 async def create_session(data: SessionCreate, user: CurrentUser) -> SessionOut:
     session = await session_service.create_session(user, data)
-    return SessionOut.from_session(session)
+    return SessionOut.from_session(session, show_sources=is_admin(user))
 
 
 @router.get("", response_model=list[SessionSummary])
@@ -22,4 +22,4 @@ async def list_learn_sessions(topic_slug: str, user: CurrentUser) -> list[Sessio
 @router.get("/{session_id}", response_model=SessionOut)
 async def get_session(session_id: str, user: CurrentUser) -> SessionOut:
     session = await session_service.get_session(user.id, session_id)
-    return SessionOut.from_session(session)
+    return SessionOut.from_session(session, show_sources=is_admin(user))

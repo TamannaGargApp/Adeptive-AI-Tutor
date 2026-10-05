@@ -54,6 +54,10 @@ export interface ChatMessage {
   role: "student" | "tutor";
   content: string;
   created_at: string;
+  /** Names of files attached to this message (their contents are never stored on the server). */
+  attachments?: string[];
+  /** Tutor replies, admins only: course notes files the reply drew on. */
+  notes_sources?: string[];
 }
 
 export interface LearningSession {
@@ -424,4 +428,13 @@ export interface CourseDeletePreview {
   answers: number;
   can_delete: boolean;
   reason: string | null;
+}
+
+export interface CourseNotesFile {
+  id: string;
+  topic_slug: string;
+  file_name: string;
+  characters: number;
+  sections: number;
+  uploaded_at: string;
 }

@@ -78,7 +78,9 @@ async def start_topic_test(user: User, topic_slug: str, ai: StructuredLLM) -> Fi
 
     generated = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
-        user_prompt=build_final_test_prompt(TOPIC_TEST_LENGTH, recent_prompts),
+        user_prompt=build_final_test_prompt(
+            TOPIC_TEST_LENGTH, recent_prompts, await tutor_service.notes_for(topic_slug, topic.key_concepts)
+        ),
         response_model=QuizResponse,
     )
     items = generated.questions[:TOPIC_TEST_LENGTH]

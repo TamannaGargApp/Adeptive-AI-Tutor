@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, errorMessage } from "@/lib/api";
+import { readAttachment } from "@/lib/attachments";
 import { useAuth } from "@/lib/auth";
-import type { AdminCourse, AdminTopic, CourseDeletePreview, CourseInput, TopicInput, TopicMaterial } from "@/lib/types";
+import type {
+  AdminCourse,
+  AdminTopic,
+  CourseDeletePreview,
+  CourseInput,
+  CourseNotesFile,
+  TopicInput,
+  TopicMaterial,
+} from "@/lib/types";
 
 import Modal from "./Modal";
 import { Alert, Spinner } from "./ui";
@@ -17,6 +26,7 @@ type Editing =
   | { kind: "topic"; topic: AdminTopic }
   | { kind: "delete-course"; course: AdminCourse }
   | { kind: "material"; topic: AdminTopic }
+  | { kind: "course-notes"; topic: AdminTopic }
   | null;
 
 function ArchivedBadge() {
@@ -173,8 +183,17 @@ export default function AdminContent() {
                     type="button"
                     className="btn btn-secondary px-3 py-1 text-sm"
                     onClick={() => setEditing({ kind: "material", topic })}
+                    title="The Read-mode study notes learners see"
                   >
-                    Notes
+                    Study notes
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary px-3 py-1 text-sm"
+                    onClick={() => setEditing({ kind: "course-notes", topic })}
+                    title="Upload your own notes for the tutor to teach from"
+                  >
+                    Course notes
                   </button>
                   <button
                     type="button"
@@ -229,6 +248,12 @@ export default function AdminContent() {
       {editing?.kind === "material" && (
         <Modal title={`${editing.topic.name}: study notes`} onClose={closeEditor}>
           <MaterialEditor topic={editing.topic} onSaved={closeEditor} />
+        </Modal>
+      )}
+
+      {editing?.kind === "course-notes" && (
+        <Modal title={`${editing.topic.name}: course notes`} onClose={closeEditor}>
+          <CourseNotesManager topic={editing.topic} />
         </Modal>
       )}
 
@@ -408,6 +433,212 @@ function MaterialEditor({ topic, onSaved }: { topic: AdminTopic; onSaved: () => 
             </button>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+// Admin notes can be longer than learner attachments.
+const NOTES_LIMITS = { maxBytes: 20 * 1024 * 1024, maxChars: 200_000 };
+
+// Must match MAX_FILES_PER_TOPIC in notes_service.py.
+const MAX_NOTES_FILES = 5;
+
+interface NotesDraft {
+  name: string;
+  text: string;
+  truncated: boolean;
+}
+
+/**
+ * Upload, review and remove the course notes the tutor teaches a topic from. Several files can be
+ * chosen at once; each is reviewed (PDF text can need fixing) before it's saved.
+ */
+function CourseNotesManager({ topic }: { topic: AdminTopic }) {
+  const [files, setFiles] = useState<CourseNotesFile[] | null>(null);
+  // Files read and waiting for review; the first one is the one on screen.
+  const [queue, setQueue] = useState<NotesDraft[]>([]);
+  const [queueSize, setQueueSize] = useState(0);
+  const [busy, setBusy] = useState<"reading" | "saving" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [savedCount, setSavedCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const load = useCallback(() => {
+    api.admin
+      .listNotes(topic.slug)
+      .then(setFiles)
+      .catch((err) => setError(errorMessage(err)));
+  }, [topic.slug]);
+
+  useEffect(load, [load]);
+
+  const draft = queue[0] ?? null;
+
+  async function readFiles(chosen: File[]) {
+    setBusy("reading");
+    setError(null);
+    setSavedCount(0);
+    const existing = new Set(files?.map((file) => file.file_name));
+    let room = MAX_NOTES_FILES - existing.size;
+    const drafts: NotesDraft[] = [];
+    const problems: string[] = [];
+    for (const file of chosen) {
+      // A file with the same name replaces the existing one, so it doesn't need a free slot.
+      if (!existing.has(file.name) && room <= 0) {
+        problems.push(`${file.name} wasn't added: a topic can have up to ${MAX_NOTES_FILES} notes files.`);
+        continue;
+      }
+      try {
+        const attachment = await readAttachment(file, NOTES_LIMITS);
+        drafts.push({ name: attachment.name, text: attachment.text, truncated: attachment.truncated });
+        if (!existing.has(file.name)) room -= 1;
+      } catch (err) {
+        problems.push(err instanceof Error ? err.message : `${file.name} couldn't be read.`);
+      }
+    }
+    if (problems.length) setError(problems.join(" "));
+    setQueue(drafts);
+    setQueueSize(drafts.length);
+    setBusy(null);
+  }
+
+  function nextFile() {
+    setQueue((current) => current.slice(1));
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    setBusy("saving");
+    setError(null);
+    try {
+      await api.admin.uploadNotes(topic.slug, draft.name, draft.text);
+      setSavedCount((count) => count + 1);
+      nextFile();
+      load();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(file: CourseNotesFile) {
+    if (!window.confirm(`Remove ${file.file_name}? The tutor will stop using it for ${topic.name}.`)) return;
+    setError(null);
+    try {
+      await api.admin.deleteNotes(file.id);
+      load();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  return (
+    <div className="space-y-4 p-5">
+      <p className="text-sm text-ink-soft">
+        The tutor uses these notes as its main source for {topic.name} in Learn, Practice, quizzes and the topic
+        test, and adds what they lack (such as examples) itself. Learners never see the files.
+      </p>
+      {error && <Alert>{error}</Alert>}
+      {!draft && savedCount > 0 && (
+        <Alert kind="info">
+          {savedCount} file{savedCount === 1 ? "" : "s"} saved. To rebuild this topic&apos;s Read-mode notes from them,
+          open Study notes and choose Regenerate.
+        </Alert>
+      )}
+
+      {!draft && (
+        <>
+          {!files && <Spinner />}
+          {files?.length === 0 && <p className="text-sm text-ink-soft">No course notes for this topic yet.</p>}
+          {files && files.length > 0 && (
+            <ul className="divide-y divide-line rounded-lg border border-line">
+              {files.map((file) => (
+                <li key={file.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-bold">{file.file_name}</span>
+                    <span className="text-xs text-ink-soft">
+                      {file.sections} sections · {file.characters.toLocaleString()} characters ·{" "}
+                      {new Date(file.uploaded_at).toLocaleDateString()}
+                    </span>
+                  </span>
+                  <button type="button" className="text-xs font-bold text-bad hover:underline" onClick={() => remove(file)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.md,.txt"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              const chosen = Array.from(event.target.files ?? []);
+              event.target.value = "";
+              if (chosen.length) void readFiles(chosen);
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={busy !== null || (files?.length ?? 0) >= MAX_NOTES_FILES}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {busy === "reading" ? "Reading files…" : "Upload notes (PDF, Markdown or text)"}
+          </button>
+          <p className="text-xs text-ink-soft">
+            You can select several files at once. Up to {MAX_NOTES_FILES} files per topic; uploading a file with the
+            same name replaces it. For Word documents, save as PDF first.
+          </p>
+        </>
+      )}
+
+      {draft && (
+        <div className="space-y-3">
+          <p className="text-sm">
+            {queueSize > 1 && (
+              <span className="mr-2 rounded-full bg-blue-tint px-2 py-0.5 text-xs font-bold text-blue-deep">
+                Reviewing {queueSize - queue.length + 1} of {queueSize}
+              </span>
+            )}
+            <span className="font-bold">Review {draft.name}</span> before saving: PDF text can come out messy. Fix
+            anything that reads wrongly. Headings starting with <code>#</code> help the tutor find the right section.
+          </p>
+          {draft.truncated && (
+            <Alert kind="info">This file is very long, so only its first 200,000 characters are used.</Alert>
+          )}
+          <label htmlFor="notes-draft" className="sr-only">
+            Extracted notes text
+          </label>
+          <textarea
+            key={draft.name}
+            id="notes-draft"
+            className="input font-mono text-sm"
+            rows={14}
+            value={draft.text}
+            onChange={(event) => {
+              const text = event.target.value;
+              setQueue((current) => [{ ...current[0], text }, ...current.slice(1)]);
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary" disabled={busy !== null} onClick={saveDraft}>
+              {busy === "saving" ? "Saving…" : queue.length > 1 ? "Save and continue" : "Save notes"}
+            </button>
+            {queue.length > 1 && (
+              <button type="button" className="btn btn-secondary" disabled={busy !== null} onClick={nextFile}>
+                Skip this file
+              </button>
+            )}
+            <button type="button" className="btn btn-secondary" disabled={busy !== null} onClick={() => setQueue([])}>
+              {queue.length > 1 ? "Cancel the rest" : "Cancel"}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

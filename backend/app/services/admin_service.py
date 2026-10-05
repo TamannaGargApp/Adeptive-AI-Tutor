@@ -178,7 +178,9 @@ async def delete_course(slug: str) -> None:
     db = get_database()
     topic_slugs = await db.topics.distinct("slug", {"subject": slug})
     in_topics = {"topic_slug": {"$in": topic_slugs}}
-    for collection in (db.topic_progress, db.attempts, db.questions, db.sessions, db.topic_materials):
+    for collection in (
+        db.topic_progress, db.attempts, db.questions, db.sessions, db.topic_materials, db.course_notes
+    ):
         await collection.delete_many(in_topics)
     await db.final_tests.delete_many({"$or": [in_topics, {"scope": "course", "subject_slug": slug}]})
     await db.course_progress.delete_many({"subject_slug": slug})

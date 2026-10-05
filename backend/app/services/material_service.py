@@ -10,7 +10,7 @@ from app.db.mongodb import get_database
 from app.models.topic import Topic
 from app.prompts.tutor_prompt import build_material_prompt, subject_rules
 from app.schemas.material import StudyMaterialResponse, TopicMaterialIn, TopicMaterialOut
-from app.services import subject_service, topic_service
+from app.services import notes_service, subject_service, topic_service
 from app.services.ai_service import StructuredLLM
 
 
@@ -35,10 +35,17 @@ async def update_material(topic_slug: str, data: TopicMaterialIn) -> TopicMateri
 
 async def _generate_and_save(topic: Topic, ai: StructuredLLM) -> dict:
     subject = await subject_service.get_subject(topic.subject)
+    # Admin-uploaded course notes, if any, are the basis; the AI fills in what they lack.
+    notes = await notes_service.get_full_notes(topic.slug)
     material = await ai.generate_structured(
         system_prompt=subject_rules(subject.name),
         user_prompt=build_material_prompt(
-            subject.name, subject.language, topic.name, topic.description, topic.key_concepts
+            subject.name,
+            subject.language,
+            topic.name,
+            topic.description,
+            topic.key_concepts,
+            notes.text if notes else None,
         ),
         response_model=StudyMaterialResponse,
     )

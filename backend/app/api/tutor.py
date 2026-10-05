@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status
 
-from app.core.dependencies import AIDependency, CurrentUser
+from app.core.dependencies import AIDependency, CurrentUser, is_admin
+from app.models.session import without_notes_sources
 from app.schemas.quiz import QuizOut, QuizRequest, QuizResult
 from app.schemas.tutor import (
     EvaluateRequest,
@@ -17,7 +18,11 @@ router = APIRouter(prefix="/api/tutor", tags=["tutor"])
 
 @router.post("/learn", response_model=LearnReply)
 async def learn(data: LearnRequest, user: CurrentUser, ai: AIDependency) -> LearnReply:
-    return await tutor_service.teach(user, data.session_id, data.message, ai)
+    reply = await tutor_service.teach(user, data.session_id, data.message, ai, data.attachments)
+    if is_admin(user):
+        return reply
+    # Which course notes were used is shown to admins only.
+    return reply.model_copy(update={"reply": without_notes_sources([reply.reply])[0]})
 
 
 @router.post("/practice", response_model=QuestionOut, status_code=status.HTTP_201_CREATED)

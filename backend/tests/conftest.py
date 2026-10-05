@@ -30,9 +30,11 @@ class FakeAI:
     def __init__(self) -> None:
         self.responses: dict[type[BaseModel], BaseModel] = {}
         self.calls: list[str] = []
+        self.prompts: list[str] = []
 
     async def generate_structured(self, *, system_prompt: str, user_prompt: str, response_model):
         self.calls.append(response_model.__name__)
+        self.prompts.append(user_prompt)
         if response_model not in self.responses:
             raise AIServiceError("Fake AI has no response configured.")
         return self.responses[response_model]

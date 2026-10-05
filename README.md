@@ -47,6 +47,10 @@ off-topic requests are politely redirected.
   scores and the final test).
 - **Progress charts**: questions per day (correct vs incorrect), first-try accuracy over time, and a
   30-day streak calendar.
+- **File attachments in Learn**: attach up to 3 PDFs, text or code files to a conversation (📎) and ask
+  about them. Text is extracted in the browser and kept in the browser's IndexedDB; the server receives
+  it with each question and **never stores file contents**, only file names in the chat history. Files
+  that don't fit the course are politely declined.
 - **Voice tutoring**: speak to the tutor (🎤), hear any reply read aloud (🔊), or turn on Voice mode to do
   both automatically. Uses the browser's built-in speech features (speaking works in Chrome and Edge).
 - **Code execution**: tutor code examples have a ▶ Run button, and Practice includes write-code exercises
@@ -54,6 +58,10 @@ off-topic requests are politely redirected.
   never on the server.
 - **Personalized feedback**: an AI coach report on the Progress page, built from the learner's actual
   mistakes and progress: strengths, mistake patterns, areas to improve (why and how), and next steps.
+- **Course notes (admin uploads)**: admins upload notes per topic (PDF, Markdown or text), review the
+  extracted text, and save it. The tutor uses the notes as its main source in Learn, Practice, quizzes,
+  topic tests and Read-mode notes, and adds what they lack (such as examples) from its own knowledge.
+  Admins see which notes a reply used ("📘 From course notes"); learners don't.
 - **Admin dashboard**: platform stats, a learner list, and course/topic management (create, edit, reorder,
   archive). Admins are set with `ADMIN_EMAILS`.
 - **Light, dark, and system themes**, remembered per browser.
@@ -197,6 +205,13 @@ Key design decisions:
 - **Final tests reveal nothing early.** Their questions can't be checked through the normal evaluate
   endpoint. Answers are autosaved and graded together on submit, or automatically once the time runs
   out, even if the browser was closed.
+- **Course notes ground the tutor without limiting it.** The sections of a topic's notes that match the
+  question are added to the prompt (keyword matching, up to about 8,000 characters), with instructions to
+  follow the notes and fill gaps from general knowledge. Source labels are stripped from learners'
+  responses on the server, not just hidden in the UI.
+- **Learner files never touch the database.** Attachments are read and kept in the learner's browser,
+  sent with each question, and used for that request only. On another device the conversation is still
+  there, with a prompt to re-attach the file.
 - **Learner code never runs on the server.** Coding exercises run in the browser and report their test
   results. Because those results come from the browser, coding exercises are part of Practice only;
   final tests and course exams stay fully server-graded.
@@ -221,6 +236,7 @@ Key design decisions:
 | `topic_progress` | Per-learner, per-topic stats used for mastery, completion, and difficulty, plus the best final test score |
 | `course_progress` | Per-learner, per-course exam results: best score and whether it was passed |
 | `user_badges` | Badges each learner has earned, with the date |
+| `course_notes` | Admin-uploaded notes per topic, split into sections (original files aren't kept) |
 | `topic_materials` | Study notes for each topic (shared by all learners) |
 | `feedback_reports` | Personalized feedback reports, so they're only regenerated after new answers |
 | `final_tests` | Topic tests and course exams: questions, autosaved answers, review marks, timing, and the analysis |
@@ -415,6 +431,7 @@ too. API clients can alternatively send `Authorization: Bearer <token>`.
 | GET / POST / PUT | `/api/admin/courses`, `/api/admin/topics` | Admin: manage courses and topics (archive instead of delete) |
 | GET / DELETE | `/api/admin/courses/{slug}/delete-preview`, `/api/admin/courses/{slug}` | Admin: preview, then permanently delete a course and its learner data |
 | PUT / POST | `/api/admin/topics/{slug}/material`, `…/material/regenerate` | Admin: edit or regenerate a topic's study notes |
+| GET / POST / DELETE | `/api/admin/topics/{slug}/notes`, `/api/admin/notes/{id}` | Admin: list, upload or remove a topic's course notes |
 | GET | `/api/topics/{slug}/material` | A topic's study notes (written by the AI on first request) |
 | POST | `/api/admin/topics/{slug}/move` | Admin: move a topic up or down in its course |
 | GET | `/api/gamification?tz=` | Streak, XP level and badges (records newly earned badges) |
@@ -473,6 +490,10 @@ Covered:
   no retaking a passed course exam, 3 failed attempts in a row locking a topic test (and unlocking after
   the cooldown), the 12-hour course exam cooldown, a pass resetting the fail count, and the backfill of
   older test results.
+- **Course notes:** splitting by heading, matching only relevant sections, admin-only uploads, notes
+  reaching the AI, and source labels shown to admins but removed for learners.
+- **Attachments:** file text reaches the AI on every question but is never stored, only file names are
+  saved, and attachment limits are enforced.
 - **New features:** coding exercises showing tests but not the solution and being graded from test
   results, admin-only access, content management (create, reorder, archive), and feedback reports
   needing enough answers and not being regenerated without new ones.

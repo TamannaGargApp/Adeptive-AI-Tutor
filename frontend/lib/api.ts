@@ -5,6 +5,7 @@ import type {
   AdminTopic,
   AdminUserRow,
   CourseDeletePreview,
+  CourseNotesFile,
   CourseInput,
   EvaluationResult,
   FeedbackReport,
@@ -154,10 +155,10 @@ export const api = {
   listLearnSessions: (topicSlug: string) =>
     request<SessionSummary[]>(`/api/sessions?${new URLSearchParams({ topic_slug: topicSlug }).toString()}`),
 
-  learn: (sessionId: string, message: string) =>
+  learn: (sessionId: string, message: string, attachments: { name: string; text: string; new: boolean }[] = []) =>
     request<LearnReply>("/api/tutor/learn", {
       method: "POST",
-      body: { session_id: sessionId, message },
+      body: { session_id: sessionId, message, attachments },
       timeoutMs: AI_TIMEOUT_MS,
     }),
   practice: (sessionId: string) =>
@@ -223,6 +224,13 @@ export const api = {
         method: "POST",
         timeoutMs: AI_TIMEOUT_MS,
       }),
+    listNotes: (topicSlug: string) => request<CourseNotesFile[]>(`/api/admin/topics/${topicSlug}/notes`),
+    uploadNotes: (topicSlug: string, fileName: string, text: string) =>
+      request<CourseNotesFile>(`/api/admin/topics/${topicSlug}/notes`, {
+        method: "POST",
+        body: { file_name: fileName, text },
+      }),
+    deleteNotes: (notesId: string) => request<void>(`/api/admin/notes/${notesId}`, { method: "DELETE" }),
     topics: (courseSlug: string) => request<AdminTopic[]>(`/api/admin/courses/${courseSlug}/topics`),
     createTopic: (courseSlug: string, data: TopicInput) =>
       request<AdminTopic>("/api/admin/topics", { method: "POST", body: { ...data, subject_slug: courseSlug } }),

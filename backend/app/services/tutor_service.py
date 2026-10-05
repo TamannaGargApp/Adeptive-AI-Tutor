@@ -14,8 +14,15 @@ from app.prompts.tutor_prompt import (
     build_system_prompt,
 )
 from app.schemas.quiz import QuizResponse
-from app.schemas.tutor import LearnReply, LessonResponse, QuestionResponse
-from app.services import progress_service, question_service, session_service, subject_service, topic_service
+from app.schemas.tutor import AttachmentIn, LearnReply, LessonResponse, QuestionResponse
+from app.services import (
+    notes_service,
+    progress_service,
+    question_service,
+    session_service,
+    subject_service,
+    topic_service,
+)
 from app.services.ai_service import StructuredLLM
 
 QUIZ_LENGTH = 5
@@ -50,24 +57,50 @@ async def build_learner_context(
     )
 
 
-async def teach(user: User, session_id: str, message: str, ai: StructuredLLM) -> LearnReply:
+async def teach(
+    user: User, session_id: str, message: str, ai: StructuredLLM, attachments: list[AttachmentIn] | None = None
+) -> LearnReply:
     session = await session_service.get_session_in_mode(user.id, session_id, LearningMode.LEARN)
     context = await build_learner_context(user, session.topic_slug, session.difficulty, session.mode)
+    attachments = attachments or []
     message = message.strip()
+    new_files = [item.name for item in attachments if item.new]
+    if not message and new_files:
+        message = "Please take a look at the file I attached."
+    # The parts of the course notes relevant to this message (or to the topic, when starting a lesson).
+    notes = await notes_service.get_excerpt(
+        session.topic_slug, f"{context.topic_name} {message or ' '.join(context.key_concepts)}"
+    )
 
     lesson = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
         user_prompt=build_lesson_prompt(
-            session.messages[-LESSON_HISTORY_LIMIT:], message, context.subject_name, context.language
+            session.messages[-LESSON_HISTORY_LIMIT:],
+            message,
+            context.subject_name,
+            context.language,
+            [(item.name, item.text) for item in attachments],
+            notes.text if notes else None,
         ),
         response_model=LessonResponse,
     )
 
     now = datetime.now(UTC)
-    reply = ChatMessage(role="tutor", content=lesson.message.strip(), created_at=now)
-    new_messages = [ChatMessage(role="student", content=message, created_at=now)] if message else []
+    reply = ChatMessage(
+        role="tutor", content=lesson.message.strip(), created_at=now, notes_sources=notes.sources if notes else []
+    )
+    # Only the file names are saved with the message, never the file contents.
+    new_messages = (
+        [ChatMessage(role="student", content=message, created_at=now, attachments=new_files)] if message else []
+    )
     await session_service.append_messages(session.id, [*new_messages, reply])
     return LearnReply(session_id=session.id, reply=reply, lesson=lesson)
+
+
+async def notes_for(topic_slug: str, concepts: list[str]) -> str | None:
+    """Course notes relevant to the given concepts, for question generation."""
+    excerpt = await notes_service.get_excerpt(topic_slug, " ".join(concepts))
+    return excerpt.text if excerpt else None
 
 
 def align_concept(generated: QuestionResponse, key_concepts: list[str]) -> None:
@@ -88,7 +121,9 @@ async def generate_practice_question(user: User, session_id: str, ai: Structured
 
     generated = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
-        user_prompt=build_practice_question_prompt(recent_prompts, uncovered),
+        user_prompt=build_practice_question_prompt(
+            recent_prompts, uncovered, await notes_for(session.topic_slug, uncovered or context.key_concepts)
+        ),
         response_model=QuestionResponse,
     )
     align_concept(generated, context.key_concepts)
@@ -115,7 +150,9 @@ async def generate_quiz(user: User, session_id: str, ai: StructuredLLM) -> tuple
     recent_prompts = await question_service.get_recent_prompts(user.id, session.topic_slug)
     quiz = await ai.generate_structured(
         system_prompt=build_system_prompt(context),
-        user_prompt=build_quiz_prompt(QUIZ_LENGTH, recent_prompts),
+        user_prompt=build_quiz_prompt(
+            QUIZ_LENGTH, recent_prompts, await notes_for(session.topic_slug, context.key_concepts)
+        ),
         response_model=QuizResponse,
     )
     for generated in quiz.questions:

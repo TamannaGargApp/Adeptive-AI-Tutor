@@ -197,3 +197,36 @@ async def test_learn_history_lists_past_conversations(auth_client, fake_ai):
     assert [item["id"] for item in history] == [second["id"], first["id"]]
     assert history[1]["preview"] == "What is a while loop?"
     assert history[1]["message_count"] == 2
+
+
+async def test_attached_file_reaches_the_ai_but_is_never_stored(auth_client, fake_ai, database):
+    fake_ai.responses[LessonResponse] = LessonResponse(message="Your loop counts from 0.", on_topic=True)
+    session = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()
+    secret = "for n in range(3): print(n)  # SECRET-FILE-CONTENT"
+
+    first = await auth_client.post(
+        "/api/tutor/learn",
+        json={"session_id": session["id"], "message": "", "attachments": [{"name": "loop.py", "text": secret, "new": True}]},
+    )
+    assert first.status_code == 200
+    # A follow-up resends the file (now not new), as the browser does.
+    await auth_client.post(
+        "/api/tutor/learn",
+        json={"session_id": session["id"], "message": "Why 0?", "attachments": [{"name": "loop.py", "text": secret}]},
+    )
+
+    assert all("SECRET-FILE-CONTENT" in prompt for prompt in fake_ai.prompts[-2:])
+    stored = await database.sessions.find_one({"_id": __import__("bson").ObjectId(session["id"])})
+    assert "SECRET-FILE-CONTENT" not in str(stored)
+    student = [message for message in stored["messages"] if message["role"] == "student"]
+    assert student[0]["attachments"] == ["loop.py"]  # only the name, on the message it was attached to
+    assert student[1]["attachments"] == []
+
+
+async def test_attachment_limits_are_enforced(auth_client):
+    session = (await auth_client.post("/api/sessions", json={"topic_slug": "loops", "mode": "learn"})).json()
+    too_many = [{"name": f"f{i}.txt", "text": "x"} for i in range(4)]
+    response = await auth_client.post(
+        "/api/tutor/learn", json={"session_id": session["id"], "message": "Hi", "attachments": too_many}
+    )
+    assert response.status_code == 422
