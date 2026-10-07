@@ -5,8 +5,23 @@ import { useState } from "react";
 /**
  * A product screenshot for the landing page. Until the image file exists in public/screenshots/,
  * a labelled placeholder of the same shape is shown, so the page always looks finished.
+ *
+ * With `fill`, the screenshot fills its container (cropped around `focus`), for feature cards.
  */
-export function Screenshot({ file, alt, label }: { file: string; alt: string; label: string }) {
+export function Screenshot({
+  file,
+  alt,
+  label,
+  fill = false,
+  focus = "top",
+}: {
+  file: string;
+  alt: string;
+  label: string;
+  fill?: boolean;
+  /** With `fill`: which part of the image stays visible when cropped (CSS object-position). */
+  focus?: string;
+}) {
   const [missing, setMissing] = useState(false);
   const src = `/screenshots/${file}`;
 
@@ -15,7 +30,9 @@ export function Screenshot({ file, alt, label }: { file: string; alt: string; la
       <div
         role="img"
         aria-label={alt}
-        className="grid aspect-[16/10] w-full place-items-center rounded-2xl border-2 border-dashed border-line bg-surface p-6 text-center"
+        className={`bg-dots grid w-full place-items-center border-2 border-dashed border-line bg-surface p-6 text-center ${
+          fill ? "h-full rounded-t-xl" : "aspect-[16/10] rounded-2xl"
+        }`}
       >
         <span>
           <span className="block text-sm font-bold text-ink-soft">Screenshot: {label}</span>
@@ -24,16 +41,40 @@ export function Screenshot({ file, alt, label }: { file: string; alt: string; la
       </div>
     );
   }
+
+  const chrome = (
+    <div aria-hidden className="flex items-center gap-1.5 border-b border-line px-4 py-2.5">
+      <span className="h-2.5 w-2.5 rounded-full bg-bad/60" />
+      <span className="h-2.5 w-2.5 rounded-full bg-sun/80" />
+      <span className="h-2.5 w-2.5 rounded-full bg-good/60" />
+    </div>
+  );
+
+  if (fill) {
+    return (
+      <figure className="flex h-full flex-col overflow-hidden rounded-t-xl border border-b-0 border-line bg-surface">
+        {chrome}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          onError={() => setMissing(true)}
+          className="min-h-0 w-full flex-1 object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          style={{ objectPosition: focus }}
+          loading="lazy"
+        />
+      </figure>
+    );
+  }
+
   return (
-    // A plain img (not next/image) so a missing file can fall back to the placeholder.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      onError={() => setMissing(true)}
-      className="w-full rounded-2xl border border-line shadow-xl shadow-black/10"
-      loading="lazy"
-    />
+    // Framed like a browser window so screenshots read as the real app.
+    <figure className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-lift)]">
+      {chrome}
+      {/* A plain img (not next/image) so a missing file can fall back to the placeholder. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} onError={() => setMissing(true)} className="block w-full" loading="lazy" />
+    </figure>
   );
 }
 
@@ -43,7 +84,7 @@ export function DemoVideo() {
   if (!url) return null;
   const youtube = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/.exec(url);
   return (
-    <div className="mx-auto mt-10 max-w-4xl overflow-hidden rounded-2xl border border-line bg-code shadow-xl shadow-black/15">
+    <div className="mx-auto mt-10 max-w-4xl overflow-hidden rounded-2xl border border-line bg-code shadow-[var(--shadow-lift)]">
       {youtube ? (
         <iframe
           className="aspect-video w-full"

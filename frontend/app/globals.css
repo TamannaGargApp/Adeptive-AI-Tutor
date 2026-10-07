@@ -1,77 +1,117 @@
 @import "tailwindcss";
 
 /*
-  Palette drawn from Python's own identity: a deep "Python blue" for structure and actions,
-  and the Python yellow reserved for one job only: the tutor's hints and guidance.
+  Palette taken from the logo: a royal blue for structure and actions, violet and magenta from the
+  "AI" and the swoosh, cyan from the glowing nodes, and the wordmark's deep navy for text.
+  Amber is kept for one job only: the tutor's hints and guidance.
+
+  Token names stay the same as before (blue, sun, ...), so every component picks up the new colours.
+  All text colours below meet WCAG AA (4.5:1) on surface and paper in both themes.
 */
 @theme {
-  --color-ink: #17212b;
-  --color-ink-soft: #4a5866;
-  --color-paper: #f4f6f9;
+  --color-ink: #0f1645;
+  --color-ink-soft: #4a5180;
+  --color-paper: #f5f6ff;
   --color-surface: #ffffff;
-  --color-line: #d9e0e8;
-  --color-blue: #2f5f8a;
-  --color-blue-deep: #1f4466;
-  --color-blue-tint: #e5eef6;
-  --color-sun: #ffd43b;
-  --color-sun-tint: #fff5cc;
-  --color-good: #2e7d4f;
-  --color-good-tint: #e2f2e8;
+  --color-line: #e1e4f5;
+  --color-blue: #2348e6;
+  --color-blue-deep: #1a2fb0;
+  --color-blue-tint: #e8ecff;
+  --color-violet: #7b34e6;
+  --color-violet-tint: #f2eaff;
+  --color-magenta: #c03fe0;
+  --color-cyan: #087199;
+  --color-cyan-tint: #e2f6fd;
+  --color-sun: #f5b82e;
+  --color-sun-tint: #fff4d6;
+  --color-good: #1f7a4a;
+  --color-good-tint: #e0f4e9;
   --color-bad: #b4441b;
   --color-bad-tint: #fbe8df;
   /* Text on blue/green accent backgrounds, and code blocks (dark in both themes). */
   --color-on-accent: #ffffff;
-  --color-code: #17212b;
-  --color-code-fg: #f4f7fa;
+  --color-code: #0d1236;
+  --color-code-fg: #eef0ff;
+
+  /* Brand gradients. Buttons use the darker pair so white text stays readable. */
+  --gradient-brand: linear-gradient(120deg, #2348e6 0%, #7b34e6 100%);
+  --gradient-brand-hover: linear-gradient(120deg, #1a2fb0 0%, #6a2bd0 100%);
+  --gradient-glow: linear-gradient(120deg, #00b0f0 0%, #7b34e6 50%, #d24bf0 100%);
+  /* For gradient text: deeper stops in light mode so large headings stay above 3:1 contrast. */
+  --gradient-text: linear-gradient(120deg, #0b7fc4 0%, #7b34e6 55%, #b030d0 100%);
+
+  --shadow-soft: 0 1px 2px rgb(15 22 69 / 0.04), 0 8px 24px -12px rgb(35 72 230 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(15 22 69 / 0.05), 0 18px 40px -16px rgb(35 72 230 / 0.32);
 
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 /*
-  Dark theme. Applied when the learner picks Dark, or picks System (no data-theme attribute)
-  and their device prefers dark. Both blocks list the same values on purpose: CSS can't share
-  one block between an attribute selector and a media query.
+  Dark theme: a soft charcoal (not pure black), so it's easy on the eyes and the logo's blue and
+  violet stand out as accents rather than tinting the whole page. Applied when the learner picks Dark, or picks
+  System (no data-theme attribute) and their device prefers dark. Both blocks list the same values
+  on purpose: CSS can't share one block between an attribute selector and a media query.
 */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-ink: #e6edf3;
-  --color-ink-soft: #9fadba;
-  --color-paper: #0e1419;
-  --color-surface: #161f27;
-  --color-line: #2b3743;
-  --color-blue: #5b98d1;
-  --color-blue-deep: #a9cdf0;
-  --color-blue-tint: #1a2b3c;
-  --color-sun-tint: #352f12;
-  --color-good: #57c993;
-  --color-good-tint: #12281d;
-  --color-bad: #f0875a;
-  --color-bad-tint: #37190f;
-  --color-on-accent: #0e1419;
-  --color-code: #0a0f13;
-  --color-code-fg: #e6edf3;
+  --color-ink: #eeeef5;
+  --color-ink-soft: #b4b6c9;
+  --color-paper: #1c1d26;
+  --color-surface: #252632;
+  --color-line: #363849;
+  --color-blue: #8b9dff;
+  --color-blue-deep: #cdd6ff;
+  --color-blue-tint: #2c2f48;
+  --color-violet: #c2a2ff;
+  --color-violet-tint: #322a4a;
+  --color-magenta: #e27df7;
+  --color-cyan: #6fd9f8;
+  --color-cyan-tint: #1f3540;
+  --color-sun-tint: #3a3220;
+  --color-good: #62d39d;
+  --color-good-tint: #1f3329;
+  --color-bad: #f49a72;
+  --color-bad-tint: #3c2620;
+  --color-on-accent: #1c1d26;
+  --color-code: #15161d;
+  --color-code-fg: #eeeef5;
+  --gradient-brand: linear-gradient(120deg, #3a55f0 0%, #8340ec 100%);
+  --gradient-brand-hover: linear-gradient(120deg, #2348e6 0%, #7b34e6 100%);
+  --gradient-text: linear-gradient(120deg, #4fd2f7 0%, #9f7bff 55%, #e27df7 100%);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px -12px rgb(0 0 0 / 0.45);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 40px -16px rgb(117 144 255 / 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-ink: #e6edf3;
-    --color-ink-soft: #9fadba;
-    --color-paper: #0e1419;
-    --color-surface: #161f27;
-    --color-line: #2b3743;
-    --color-blue: #5b98d1;
-    --color-blue-deep: #a9cdf0;
-    --color-blue-tint: #1a2b3c;
-    --color-sun-tint: #352f12;
-    --color-good: #57c993;
-    --color-good-tint: #12281d;
-    --color-bad: #f0875a;
-    --color-bad-tint: #37190f;
-    --color-on-accent: #0e1419;
-    --color-code: #0a0f13;
-    --color-code-fg: #e6edf3;
+    --color-ink: #eeeef5;
+    --color-ink-soft: #b4b6c9;
+    --color-paper: #1c1d26;
+    --color-surface: #252632;
+    --color-line: #363849;
+    --color-blue: #8b9dff;
+    --color-blue-deep: #cdd6ff;
+    --color-blue-tint: #2c2f48;
+    --color-violet: #c2a2ff;
+    --color-violet-tint: #322a4a;
+    --color-magenta: #e27df7;
+    --color-cyan: #6fd9f8;
+    --color-cyan-tint: #1f3540;
+    --color-sun-tint: #3a3220;
+    --color-good: #62d39d;
+    --color-good-tint: #1f3329;
+    --color-bad: #f49a72;
+    --color-bad-tint: #3c2620;
+    --color-on-accent: #1c1d26;
+    --color-code: #15161d;
+    --color-code-fg: #eeeef5;
+    --gradient-brand: linear-gradient(120deg, #3a55f0 0%, #8340ec 100%);
+    --gradient-brand-hover: linear-gradient(120deg, #2348e6 0%, #7b34e6 100%);
+    --gradient-text: linear-gradient(120deg, #4fd2f7 0%, #9f7bff 55%, #e27df7 100%);
+    --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px -12px rgb(0 0 0 / 0.45);
+    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 40px -16px rgb(117 144 255 / 0.35);
   }
 }
 
@@ -81,8 +121,8 @@
 
 /*
   Logo swap: the dark-background mark is hidden by default, and shown instead of the light
-  mark under the same conditions globals.css uses for dark colors above (explicit dark, or
-  System with the device preferring dark).
+  mark under the same conditions used for dark colors above (explicit dark, or System with the
+  device preferring dark).
 */
 .logo-dark-mark {
   display: none;
@@ -114,8 +154,19 @@ body {
   line-height: 1.55;
 }
 
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
+::selection {
+  background: var(--color-violet-tint);
+  color: var(--color-ink);
+}
+
 :focus-visible {
-  outline: 2px solid var(--color-blue);
+  outline: 2px solid var(--color-violet);
   outline-offset: 2px;
 }
 
@@ -132,11 +183,14 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     padding: 0.625rem 1.125rem;
     font-weight: 700;
     border: 1px solid transparent;
-    transition: background-color 120ms ease;
+    transition:
+      background-color 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
     cursor: pointer;
   }
   .btn:disabled {
@@ -144,11 +198,14 @@ body {
     cursor: not-allowed;
   }
   .btn-primary {
-    background: var(--color-blue);
-    color: var(--color-on-accent);
+    background: var(--gradient-brand);
+    color: #ffffff;
+    box-shadow: 0 6px 18px -8px rgb(91 62 230 / 0.6);
   }
   .btn-primary:hover:not(:disabled) {
-    background: var(--color-blue-deep);
+    background: var(--gradient-brand-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -10px rgb(91 62 230 / 0.7);
   }
   .btn-secondary {
     background: var(--color-surface);
@@ -157,22 +214,111 @@ body {
   }
   .btn-secondary:hover:not(:disabled) {
     background: var(--color-blue-tint);
+    border-color: color-mix(in srgb, var(--color-blue) 35%, transparent);
   }
   .input {
     width: 100%;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     border: 1px solid var(--color-line);
     background: var(--color-surface);
-    padding: 0.625rem 0.75rem;
+    padding: 0.625rem 0.875rem;
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
   }
   .input:focus {
-    border-color: var(--color-blue);
+    border-color: var(--color-violet);
     outline: none;
-    box-shadow: 0 0 0 3px var(--color-blue-tint);
+    box-shadow: 0 0 0 3px var(--color-violet-tint);
   }
   .panel {
     background: var(--color-surface);
     border: 1px solid var(--color-line);
-    border-radius: 0.75rem;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* ---------- Brand helpers (used on the landing page and for highlights) ---------- */
+
+  /* Text filled with the logo's cyan → violet → magenta glow, like the "AI" in the wordmark. */
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-brand {
+    background: var(--gradient-brand);
+    color: #ffffff;
+  }
+  /* A rounded tinted square holding a line icon. */
+  .icon-tile {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.875rem;
+    background: var(--color-violet-tint);
+    color: var(--color-violet);
+  }
+  /* Cards that rise slightly on hover. */
+  .card-lift {
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+    border-color: color-mix(in srgb, var(--color-violet) 35%, var(--color-line));
+  }
+  /* Soft coloured blur behind sections, echoing the logo's glow. Decorative only. */
+  .glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(70px);
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  /* A subtle dotted "constellation" pattern, like the network in the logo. */
+  .bg-dots {
+    background-image: radial-gradient(color-mix(in srgb, var(--color-violet) 22%, transparent) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+}
+
+/*
+  Glows are much softer on the dark theme. Outside @layer on purpose: unlayered rules win over
+  utility classes such as opacity-30 on individual glows.
+*/
+:root[data-theme="dark"] .glow {
+  opacity: 0.14;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .glow {
+    opacity: 0.14;
+  }
+}
+
+/* Landing page study set showcase: the active tab's timer bar, and the preview fading in. */
+.showcase-progress {
+  width: 0;
+  animation-name: showcase-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes showcase-fill {
+  to {
+    width: 100%;
+  }
+}
+.showcase-in {
+  animation: showcase-in 320ms ease-out;
+}
+@keyframes showcase-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
   }
 }
