@@ -9,7 +9,6 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
-venv/
 
 # Node / Next.js
 node_modules/
@@ -23,3 +22,6 @@ next-env.d.ts
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Local study set file storage (development only; production uses S3)
+backend/storage/

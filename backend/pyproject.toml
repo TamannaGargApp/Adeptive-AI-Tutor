@@ -16,6 +16,8 @@ dependencies = [
     "pyjwt>=2.9.0",
     # Timezone data for zoneinfo; Windows doesn't ship it, and streak days use the learner's timezone.
     "tzdata>=2024.1",
+    # AWS S3 client, for storing study set files.
+    "boto3>=1.35.0",
 ]
 
 [dependency-groups]

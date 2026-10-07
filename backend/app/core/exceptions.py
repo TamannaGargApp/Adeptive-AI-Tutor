@@ -30,3 +30,9 @@ class ForbiddenError(AppError):
 
 class AIServiceError(AppError):
     status_code = 503
+
+
+class StorageError(AppError):
+    """File storage (S3 or the local folder) is missing or unavailable."""
+
+    status_code = 503

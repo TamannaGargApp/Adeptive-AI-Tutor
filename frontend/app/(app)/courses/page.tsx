@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import CourseExamStatus from "@/components/CourseExamStatus";
 import { Alert, CompletionBar, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { OverallProgress, Subject } from "@/lib/types";
+import type { OverallProgress, StudyPlan, Subject } from "@/lib/types";
 
 export default function CoursesPage() {
   const { user, setUser } = useAuth();
@@ -15,6 +16,8 @@ export default function CoursesPage() {
   const [progressBySubject, setProgressBySubject] = useState<Record<string, OverallProgress>>({});
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
+  const router = useRouter();
 
   const loadCourses = useCallback(async () => {
     try {
@@ -32,6 +35,13 @@ export default function CoursesPage() {
     void loadCourses();
   }, [loadCourses]);
 
+  useEffect(() => {
+    api
+      .getStudyPlan()
+      .then(setStudyPlan)
+      .catch(() => setStudyPlan(null));
+  }, []);
+
   async function changePlan(slug: string, action: () => Promise<typeof user>) {
     setBusySlug(slug);
     setError(null);
@@ -47,6 +57,26 @@ export default function CoursesPage() {
   }
 
   const planSize = subjects?.filter((subject) => subject.in_plan).length ?? 0;
+  const studyPlanCourses = studyPlan?.strategy.courses.map((course) => course.subject_slug) ?? [];
+
+  async function removeCourse(slug: string, name: string) {
+    const inStudyPlan = studyPlanCourses.includes(slug);
+    const warning = inStudyPlan
+      ? `${name} is part of your study plan. Removing it also takes it out of the plan: ` +
+        (studyPlanCourses.length === 1
+          ? "it's the plan's only course, so the plan ends. Your progress is kept."
+          : "you'll review the updated plan next. Your progress is kept.")
+      : `Remove ${name} from My courses? Your progress is kept.`;
+    if (!window.confirm(warning)) return;
+    await changePlan(slug, () => api.removeSubjectFromPlan(slug));
+    if (!inStudyPlan) return;
+    if (studyPlanCourses.length === 1) {
+      await api.deleteStudyPlan();
+      setStudyPlan(null);
+    } else {
+      router.push(`/study-plan?remove=${slug}`);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
@@ -83,10 +113,17 @@ export default function CoursesPage() {
                   </div>
                   {subject.current ? (
                     <span className="rounded-full bg-blue-tint px-2.5 py-0.5 text-xs font-bold text-blue-deep">Current course</span>
-                  ) : subject.in_plan ? (
-                    <span className="rounded-full border border-line px-2.5 py-0.5 text-xs font-bold text-ink-soft">In your plan</span>
                   ) : null}
                 </div>
+                {studyPlan && (
+                  <p className="-mt-2 text-xs font-bold">
+                    {studyPlanCourses.includes(subject.slug) ? (
+                      <span className="text-blue-deep">📅 In your study plan</span>
+                    ) : (
+                      <span className="text-ink-soft">On its own (not in your study plan)</span>
+                    )}
+                  </p>
+                )}
                 <p className="text-ink-soft">{subject.description}</p>
 
                 {progress && (
@@ -118,12 +155,22 @@ export default function CoursesPage() {
                       Continue learning
                     </Link>
                   )}
+                  {studyPlan && !studyPlanCourses.includes(subject.slug) && (
+                    <Link href={`/study-plan?add=${subject.slug}`} className="btn btn-secondary">
+                      Add to study plan
+                    </Link>
+                  )}
+                  {studyPlanCourses.includes(subject.slug) && studyPlanCourses.length > 1 && (
+                    <Link href={`/study-plan?remove=${subject.slug}`} className="btn btn-secondary">
+                      Take out of study plan
+                    </Link>
+                  )}
                   {subject.in_plan && planSize > 1 && (
                     <button
                       type="button"
                       className="btn btn-secondary"
                       disabled={busy}
-                      onClick={() => changePlan(subject.slug, () => api.removeSubjectFromPlan(subject.slug))}
+                      onClick={() => removeCourse(subject.slug, subject.name)}
                     >
                       Remove
                     </button>

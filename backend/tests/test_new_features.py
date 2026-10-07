@@ -200,3 +200,11 @@ async def test_reading_material_is_generated_once_then_shared(auth_client, fake_
     ).json()
     assert edited["edited"] is True
     assert (await auth_client.get("/api/topics/loops/material")).json()["content"].startswith("Edited notes")
+
+
+def test_escaped_line_breaks_in_study_notes_are_repaired():
+    from app.services.material_service import fix_escaped_newlines
+
+    assert fix_escaped_newlines("Intro.\\n\\n## print()\\nText.") == "Intro.\n\n## print()\nText."
+    untouched = 'Real lines\nprint("a\\nb")\nmore'
+    assert fix_escaped_newlines(untouched) == untouched

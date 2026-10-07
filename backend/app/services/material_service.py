@@ -49,7 +49,7 @@ async def _generate_and_save(topic: Topic, ai: StructuredLLM) -> dict:
         ),
         response_model=StudyMaterialResponse,
     )
-    return await _save(topic.slug, material.content.strip(), material.key_takeaways, edited=False)
+    return await _save(topic.slug, fix_escaped_newlines(material.content).strip(), material.key_takeaways, edited=False)
 
 
 async def _save(topic_slug: str, content: str, key_takeaways: list[str], edited: bool) -> dict:
@@ -64,11 +64,21 @@ async def _save(topic_slug: str, content: str, key_takeaways: list[str], edited:
     return document
 
 
+def fix_escaped_newlines(text: str) -> str:
+    """Repair text where the AI wrote line breaks as literal "\\n" characters, which stops Markdown
+    from rendering. Only applied when escaped breaks clearly outnumber real ones, so a code example
+    that deliberately prints "\\n" is left alone."""
+    if text.count("\\n") <= text.count("\n"):
+        return text
+    return text.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\t", "    ").replace('\\"', '"')
+
+
 def _to_out(topic: Topic, document: dict) -> TopicMaterialOut:
     return TopicMaterialOut(
         topic_slug=topic.slug,
         topic_name=topic.name,
-        content=document["content"],
+        # Also repairs notes saved before this fix, without regenerating them.
+        content=fix_escaped_newlines(document["content"]),
         key_takeaways=document.get("key_takeaways", []),
         updated_at=document["updated_at"],
         edited=document.get("edited", False),

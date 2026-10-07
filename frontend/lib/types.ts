@@ -438,3 +438,148 @@ export interface CourseNotesFile {
   sections: number;
   uploaded_at: string;
 }
+
+export type PlanFocus = "complete_course" | "weak_topics" | "exam_prep";
+export type PlanTaskType = "read" | "learn" | "practice" | "quiz" | "final_test" | "course_exam";
+
+export interface PlanSettings {
+  /** Weekdays: 0 = Monday … 6 = Sunday. */
+  study_days: number[];
+  minutes_per_day: number;
+  /** ISO date, or null for "no deadline". */
+  target_date: string | null;
+}
+
+export interface SuggestedCourse {
+  subject_slug: string;
+  role: string;
+  reason: string;
+}
+
+export interface CourseSuggestion {
+  message: string;
+  courses: SuggestedCourse[];
+  not_available: string[];
+}
+
+export interface StrategyCourse {
+  subject_slug: string;
+  weight: number;
+  focus: PlanFocus;
+  depends_on: string[];
+  start_after_topics: number;
+  reason: string;
+}
+
+export interface PlanStrategy {
+  summary: string;
+  day_sharing: "split" | "alternate";
+  day_sharing_reason: string;
+  courses: StrategyCourse[];
+}
+
+export interface PlanTask {
+  id: string;
+  subject_slug: string;
+  subject_name: string;
+  type: PlanTaskType;
+  topic_slug: string;
+  title: string;
+  detail: string;
+  minutes: number;
+  done: boolean;
+  /** Ticked by the app because the test was passed. */
+  auto_done: boolean;
+}
+
+export interface PlanDay {
+  date: string;
+  tasks: PlanTask[];
+}
+
+export interface PlanPhase {
+  start_date: string;
+  end_date: string;
+  shares: { subject_slug: string; subject_name: string; percent: number }[];
+}
+
+export interface PlanCourse {
+  subject_slug: string;
+  subject_name: string;
+  reason: string;
+  /** The course's real progress, including work done before the plan. */
+  completion_percent: number;
+  topics_completed: number;
+  topics_total: number;
+}
+
+export interface PlanGoal {
+  goal: string;
+  level: Level;
+}
+
+export interface PlanDraft extends PlanGoal {
+  courses: string[];
+  settings: PlanSettings;
+  strategy: PlanStrategy;
+  course_details: PlanCourse[];
+  phases: PlanPhase[];
+  preview_days: PlanDay[];
+  total_tasks: number;
+  finish_date: string | null;
+  fits: boolean;
+  changes_explained: string;
+}
+
+export interface StudyPlan extends PlanGoal {
+  settings: PlanSettings;
+  strategy: PlanStrategy;
+  course_details: PlanCourse[];
+  /** Average completion of the plan's courses. */
+  goal_progress: number;
+  phases: PlanPhase[];
+  created_at: string;
+  today: string;
+  days: PlanDay[];
+  total_tasks: number;
+  done_tasks: number;
+  fits: boolean;
+  estimated_finish: string | null;
+  overdue_tasks: number;
+}
+
+export type StudyTool = "notes" | "summary" | "flashcards" | "quiz";
+
+export interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+}
+
+export interface StudyQuizQuestion {
+  question: string;
+  options: string[];
+  correct_option: number;
+  explanation: string;
+}
+
+export interface StudySetSummary {
+  id: string;
+  title: string;
+  file_name: string;
+  created_at: string;
+  tools_ready: StudyTool[];
+  flashcards_known: number;
+  flashcards_total: number;
+  last_quiz: { score: number; total: number } | null;
+}
+
+export interface StudySet extends StudySetSummary {
+  has_file: boolean;
+  notes: { content: string } | null;
+  summary: { overview: string; key_points: string[]; key_terms: { term: string; definition: string }[] } | null;
+  flashcards: Flashcard[] | null;
+  known_card_ids: string[];
+  quiz: { questions: StudyQuizQuestion[] } | null;
+  chat: { role: "student" | "tutor"; content: string; created_at: string }[];
+}

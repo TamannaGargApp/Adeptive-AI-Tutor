@@ -7,6 +7,7 @@ import { LogoMark } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
 
 import CourseSwitcher from "./CourseSwitcher";
+import PlanChip from "./PlanChip";
 import ProfileMenu, { type NavItem } from "./ProfileMenu";
 import StreakChip from "./StreakChip";
 import ThemeToggle from "./ThemeToggle";
@@ -14,8 +15,10 @@ import ThemeToggle from "./ThemeToggle";
 // The main pages live in the profile menu (name + ☰), keeping the header uncluttered.
 const MAIN_LINKS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/study-plan", label: "Study plan" },
   { href: "/courses", label: "My courses" },
   { href: "/topics", label: "Topics" },
+  { href: "/study-sets", label: "Study sets" },
   { href: "/tutor", label: "Tutor" },
   { href: "/final-test", label: "Final test" },
   { href: "/progress", label: "Progress" },
@@ -48,6 +51,7 @@ export default function Navbar() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {onboarded && <PlanChip />}
           {onboarded && <StreakChip />}
           {onboarded && (
             <div className="hidden sm:block">

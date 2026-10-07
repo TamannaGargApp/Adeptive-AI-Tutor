@@ -91,6 +91,13 @@ async def add_subject_to_plan(user: User, subject_slug: str) -> User:
     return await _save_plan(user.id, plan, subject_slug)
 
 
+async def include_subjects(user: User, subject_slugs: list[str], current: str) -> User:
+    """Add several courses to My courses (keeping ones already there) and switch to `current`."""
+    plan = subject_service.plan_subjects(user)
+    plan = [*plan, *(slug for slug in subject_slugs if slug not in plan)]
+    return await _save_plan(user.id, plan, current)
+
+
 async def remove_subject_from_plan(user: User, subject_slug: str) -> User:
     plan = subject_service.plan_subjects(user)
     if subject_slug not in plan:

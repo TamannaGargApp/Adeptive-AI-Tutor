@@ -38,6 +38,15 @@ off-topic requests are politely redirected.
   concept covered, and a passed final test. A course is complete once every topic is complete and its
   course exam (locked until then) is passed. Remarks say exactly what's left.
 - **Progress tracking**: accuracy, mastery level, strengths and weaknesses by concept.
+- **Study sets**: learners upload their own notes (PDF, text or Markdown, on any subject) and get AI
+  Notes, an AI Summary, AI Flashcards (with "known / review again" progress), an AI Quiz and an AI Tutor
+  for that material. Each tool is generated the first time it's opened, then saved.
+- **Personalized study plans (optional)**: a guided planner turns a goal (e.g. "learn Python and
+  JavaScript to build web apps") into a plan across one or more courses: it suggests courses from the
+  catalogue, works out the timing, and shows a draft with phases, order and the time split between
+  courses. The learner adjusts it with quick controls or a chat box ("no weekends", "finish JS sooner")
+  and accepts it. Courses can be in the plan or studied on their own, and every change to what's in the
+  plan is shown as a draft to approve.
 - **Streaks, XP and badges**: a daily learning streak (counted in the learner's own timezone), XP and
   levels, 14 badges with progress toward each, and a "badge unlocked" notice. A 🔥 streak chip sits in the
   navbar, with the full view on the Achievements page.
@@ -209,6 +218,14 @@ Key design decisions:
   question are added to the prompt (keyword matching, up to about 8,000 characters), with instructions to
   follow the notes and fill gaps from general knowledge. Source labels are stripped from learners'
   responses on the server, not just hidden in the UI.
+- **Study plans: the AI decides strategy, the app builds the schedule.** The AI chooses courses from
+  the catalogue, their order and dependencies, their weight, and whether courses share study days or
+  alternate. A rule-based scheduler turns that into daily tasks from each course's real remaining work,
+  within the daily time limit, never before a dependency's head start. Drafts aren't stored; only an
+  accepted plan is saved.
+- **Study set files live in object storage, not the database.** The original file and its text go to a
+  private, encrypted AWS S3 bucket (or a local folder in development) under a per-learner folder; MongoDB
+  holds only what's generated from them. Downloads use short-lived presigned links.
 - **Learner files never touch the database.** Attachments are read and kept in the learner's browser,
   sent with each question, and used for that request only. On another device the conversation is still
   there, with a prompt to re-attach the file.
@@ -237,6 +254,8 @@ Key design decisions:
 | `course_progress` | Per-learner, per-course exam results: best score and whether it was passed |
 | `user_badges` | Badges each learner has earned, with the date |
 | `course_notes` | Admin-uploaded notes per topic, split into sections (original files aren't kept) |
+| `study_sets` | Study sets: title, storage keys, and the generated notes, summary, flashcards, quiz, progress and chat. The files themselves are in S3 (or `backend/storage/`) |
+| `goal_plans` | Each learner's study plan: goal, courses, AI strategy, settings and scheduled tasks |
 | `topic_materials` | Study notes for each topic (shared by all learners) |
 | `feedback_reports` | Personalized feedback reports, so they're only regenerated after new answers |
 | `final_tests` | Topic tests and course exams: questions, autosaved answers, review marks, timing, and the analysis |
@@ -355,6 +374,9 @@ cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 | `JWT_ALGORITHM` | no | `HS256` |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | no | `60` |
 | `CORS_ORIGINS` | no | Comma-separated. Defaults to `http://localhost:3000` |
+| `STORAGE_BACKEND` | no | Where study set files go: `local` (default, `backend/storage/`) or `s3` |
+| `AWS_REGION`, `S3_BUCKET` | for S3 | The private S3 bucket for study set files |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | no | Leave empty to use the standard AWS credential chain (e.g. an IAM role) |
 | `COOKIE_SECURE` | no | Set to `true` when served over HTTPS |
 | `ADMIN_EMAILS` | no | Comma-separated emails that get the Admin dashboard. Admin access can't be granted from the app |
 
@@ -434,6 +456,16 @@ too. API clients can alternatively send `Authorization: Bearer <token>`.
 | GET / POST / DELETE | `/api/admin/topics/{slug}/notes`, `/api/admin/notes/{id}` | Admin: list, upload or remove a topic's course notes |
 | GET | `/api/topics/{slug}/material` | A topic's study notes (written by the AI on first request) |
 | POST | `/api/admin/topics/{slug}/move` | Admin: move a topic up or down in its course |
+| GET / POST | `/api/study-sets` | List study sets / create one from a file read in the browser |
+| GET / DELETE | `/api/study-sets/{id}` | A study set with its tools / delete it and its stored files |
+| POST | `/api/study-sets/{id}/tools/{notes,summary,flashcards,quiz}` | Generate a tool (once; `?regenerate=true` to redo) |
+| PUT / POST | `/api/study-sets/{id}/flashcards/progress`, `…/quiz-result`, `…/chat` | Flashcard progress, quiz score, tutor chat |
+| GET | `/api/study-sets/{id}/download` | The original file (a short-lived S3 link, or streamed from local storage) |
+| GET / DELETE | `/api/study-plan?tz=` | The learner's study plan (deleting keeps its courses) |
+| POST | `/api/study-plan/suggest-courses` | Courses from the catalogue that fit a goal |
+| POST | `/api/study-plan/draft?tz=` | A draft plan to review (refined with a change request); nothing is saved |
+| POST | `/api/study-plan/accept?tz=` | Save the approved draft and add its courses to My courses |
+| POST / PATCH | `/api/study-plan/replan`, `/api/study-plan/tasks/{id}` | Rebuild the schedule from today / tick a task |
 | GET | `/api/gamification?tz=` | Streak, XP level and badges (records newly earned badges) |
 | GET | `/api/activity?tz=&days=` | Questions, accuracy, Learn messages and XP per day, for the charts |
 | GET | `/api/health` | Health check (pings MongoDB) |
@@ -465,6 +497,27 @@ docker compose up --build
 
 This runs MongoDB, the backend (using `backend/.env`), and a production build of the frontend.
 
+## Study set storage (AWS S3)
+
+By default, study set files are stored in `backend/storage/` (ignored by git), which is fine for local
+development. For production, use a private S3 bucket:
+
+1. Create an S3 bucket in your AWS account with **Block all public access** turned on.
+2. Create an IAM user or role allowed to `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject` on that
+   bucket only (for example on `arn:aws:s3:::your-bucket/users/*`).
+3. In `backend/.env`, set `STORAGE_BACKEND=s3`, `AWS_REGION` and `S3_BUCKET`, plus the access keys
+   unless the app runs on AWS with an IAM role.
+4. Restart the backend.
+
+Files are saved encrypted (`AES256`) under `users/<user id>/study-sets/<set id>/`, and downloads use
+presigned links that expire after 5 minutes.
+
+## Landing page screenshots and video
+
+The landing page shows a labelled placeholder wherever a screenshot is missing. Add the images listed in
+`frontend/public/screenshots/README.md` to replace them. For an optional demo video, set
+`NEXT_PUBLIC_DEMO_VIDEO_URL` in `frontend/.env.local` to a YouTube link or an `.mp4` URL.
+
 ## Running tests
 
 Tests use a separate `ai_tutor_test` database (dropped after each test) and a fake AI, so they never
@@ -490,6 +543,12 @@ Covered:
   no retaking a passed course exam, 3 failed attempts in a row locking a topic test (and unlocking after
   the cooldown), the 12-hour course exam cooldown, a pass resetting the fail count, and the backfill of
   older test results.
+- **Study sets:** files stored outside MongoDB, tools generated once and reused, flashcard progress and
+  quiz results, the study set tutor, deletion removing stored files, and other learners being unable to
+  open someone's set.
+- **Study plans:** sharing time between courses by weight, alternating days, waiting for a
+  dependency's head start or whole course, making AI strategies safe, phase summaries, real-courses-only
+  suggestions, draft then accept, chat changes to the schedule, and rescheduling without the AI.
 - **Course notes:** splitting by heading, matching only relevant sections, admin-only uploads, notes
   reaching the AI, and source labels shown to admins but removed for learners.
 - **Attachments:** file text reaches the AI on every question but is never stored, only file names are

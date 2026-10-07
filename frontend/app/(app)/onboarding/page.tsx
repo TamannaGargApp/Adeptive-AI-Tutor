@@ -9,6 +9,17 @@ import { useAuth } from "@/lib/auth";
 import { GOAL_LABELS, LEVEL_LABELS, LEVELS } from "@/lib/labels";
 import type { LearningGoal, Level, Subject } from "@/lib/types";
 
+type StartChoice = "plan" | "course";
+const START_OPTIONS: StartChoice[] = ["plan", "course"];
+const START_LABELS: Record<StartChoice, string> = {
+  plan: "Create a personalized study plan",
+  course: "Choose a course to start",
+};
+const START_HINTS: Record<StartChoice, string> = {
+  plan: "Tell us your goal; we'll suggest courses and build a schedule you can adjust",
+  course: "Pick a course and learn at your own pace",
+};
+
 const GOALS = Object.keys(GOAL_LABELS) as LearningGoal[];
 
 const LEVEL_HINTS: Record<Level, string> = {
@@ -65,6 +76,8 @@ export default function OnboardingPage() {
   const [difficulty, setDifficulty] = useState<Level | null>(user?.preferred_difficulty ?? null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subject, setSubject] = useState<string | null>(user?.current_subject ?? null);
+  // A study plan is optional: learners can build one from a goal, or simply pick a course.
+  const [start, setStart] = useState<StartChoice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -77,7 +90,7 @@ export default function OnboardingPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!name.trim() || !subject || !level || !goal || !difficulty) {
+    if (!name.trim() || !level || !goal || !difficulty || !start || (start === "course" && !subject)) {
       setError("Fill in your name and pick one option in each section.");
       return;
     }
@@ -89,10 +102,10 @@ export default function OnboardingPage() {
         level,
         goal,
         preferred_difficulty: difficulty,
-        subject_slug: subject,
+        subject_slug: start === "course" ? (subject ?? undefined) : undefined,
       });
       setUser(updated);
-      router.replace("/dashboard");
+      router.replace(start === "plan" ? "/study-plan" : "/dashboard");
     } catch (err) {
       setError(errorMessage(err));
       setSaving(false);
@@ -114,18 +127,6 @@ export default function OnboardingPage() {
           <input id="name" className="input" value={name} onChange={(event) => setName(event.target.value)} />
         </div>
 
-        {subjects.length > 0 && (
-          <ChoiceGroup
-            name="subject"
-            legend="What do you want to learn first?"
-            options={subjects.map((item) => item.slug)}
-            labels={Object.fromEntries(subjects.map((item) => [item.slug, item.name]))}
-            hints={Object.fromEntries(subjects.map((item) => [item.slug, item.description]))}
-            value={subject}
-            onChange={setSubject}
-          />
-        )}
-
         <ChoiceGroup
           name="level"
           legend="Current programming level"
@@ -145,8 +146,30 @@ export default function OnboardingPage() {
           onChange={setDifficulty}
         />
 
+        <ChoiceGroup
+          name="start"
+          legend="How would you like to start?"
+          options={START_OPTIONS}
+          labels={START_LABELS}
+          hints={START_HINTS}
+          value={start}
+          onChange={setStart}
+        />
+
+        {start === "course" && subjects.length > 0 && (
+          <ChoiceGroup
+            name="subject"
+            legend="Which course first?"
+            options={subjects.map((item) => item.slug)}
+            labels={Object.fromEntries(subjects.map((item) => [item.slug, item.name]))}
+            hints={Object.fromEntries(subjects.map((item) => [item.slug, item.description]))}
+            value={subject}
+            onChange={setSubject}
+          />
+        )}
+
         <button type="submit" className="btn btn-primary px-6" disabled={saving}>
-          {saving ? "Saving…" : "Save and continue"}
+          {saving ? "Saving…" : start === "plan" ? "Continue to my study plan" : "Save and continue"}
         </button>
       </form>
     </div>

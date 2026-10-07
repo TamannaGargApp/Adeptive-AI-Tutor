@@ -1,4 +1,4 @@
-import type { CompletionStatus, LearningGoal, Level, Mastery, StudyMode } from "./types";
+import type { CompletionStatus, LearningGoal, Level, Mastery, PlanTask, StudyMode } from "./types";
 
 export const LEVEL_LABELS: Record<Level, string> = {
   beginner: "Beginner",
@@ -70,3 +70,23 @@ export function courseExamLink(subjectSlug: string): string {
 /** Failing rules; must match progress_service.py on the backend. */
 export const FAILS_BEFORE_COOLDOWN = 3;
 export const RETRY_COOLDOWN_HOURS = 12;
+
+/** Where a study plan task takes the learner. */
+export function planTaskLink(task: PlanTask): string {
+  switch (task.type) {
+    case "final_test":
+      return finalTestLink(task.topic_slug);
+    case "course_exam":
+      return courseExamLink(task.subject_slug);
+    default:
+      return studyLink(task.topic_slug, task.type);
+  }
+}
+
+export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Parse "2026-10-05" as a local date (new Date("2026-10-05") would be midnight UTC). */
+export function parseLocalDate(day: string): Date {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year, month - 1, date);
+}

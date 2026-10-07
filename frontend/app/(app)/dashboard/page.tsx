@@ -5,17 +5,34 @@ import { useEffect, useState } from "react";
 
 import { GamificationSummary } from "@/components/Achievements";
 import CourseExamStatus from "@/components/CourseExamStatus";
+import { TodayPlanCard } from "@/components/StudyPlan";
 import RecommendationCard from "@/components/RecommendationCard";
 import { Alert, CompletionBadge, CompletionBar, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useGamification } from "@/lib/gamification";
 import { studyLink } from "@/lib/labels";
-import type { OverallProgress, Recommendation } from "@/lib/types";
+import type { OverallProgress, PlanTask, Recommendation, StudyPlan } from "@/lib/types";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { summary: gamification } = useGamification();
+  // undefined while loading, null when there's no plan for this course.
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | null | undefined>(undefined);
+
+  useEffect(() => {
+    api
+      .getStudyPlan()
+      .then(setStudyPlan)
+      .catch(() => setStudyPlan(null));
+  }, [user?.current_subject]);
+
+  function togglePlanTask(task: PlanTask) {
+    api
+      .setPlanTaskDone(task.id, !task.done)
+      .then(setStudyPlan)
+      .catch(() => undefined);
+  }
   const [progress, setProgress] = useState<OverallProgress | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +52,20 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold">Welcome, {user?.name}</h1>
 
       {gamification && <GamificationSummary summary={gamification} />}
+
+      {studyPlan ? (
+        <TodayPlanCard plan={studyPlan} onToggle={togglePlanTask} compact />
+      ) : (
+        studyPlan === null && (
+          <p className="panel px-5 py-4 text-sm">
+            <span className="font-bold">Want a schedule?</span>{" "}
+            <Link href="/study-plan" className="font-bold text-blue hover:text-blue-deep">
+              Create a personalized study plan
+            </Link>{" "}
+            built from what you still need to do.
+          </p>
+        )
+      )}
 
       {error && <Alert>{error}</Alert>}
       {!progress && !error && <Spinner />}

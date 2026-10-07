@@ -17,6 +17,8 @@ from app.api import (
     progress,
     recommendations,
     sessions,
+    study_plans,
+    study_sets,
     subjects,
     topics,
     tutor,
@@ -90,13 +92,13 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
     )
 
     for module in (
         auth, profile, subjects, topics, sessions, tutor, final_tests, progress, recommendations, gamification,
-        feedback, admin,
+        feedback, admin, study_plans, study_sets,
     ):
         app.include_router(module.router)
 

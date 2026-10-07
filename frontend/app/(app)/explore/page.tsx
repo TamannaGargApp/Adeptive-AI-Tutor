@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import Modal from "@/components/Modal";
@@ -36,7 +37,7 @@ export default function ExploreCoursesPage() {
       <div>
         <h1 className="text-3xl font-bold">Courses</h1>
         <p className="mt-2 text-ink-soft">
-          Every course you can study. Open one to see its topics and add it to your plan.
+          Every course you can study. Open one to see its topics and add it to My courses.
         </p>
       </div>
 
@@ -84,7 +85,7 @@ function PlanBadge({ subject }: { subject: Subject }) {
   if (subject.current)
     return <span className="shrink-0 rounded-full bg-blue-tint px-2.5 py-0.5 text-xs font-bold text-blue-deep">Current</span>;
   if (subject.in_plan)
-    return <span className="shrink-0 rounded-full bg-good-tint px-2.5 py-0.5 text-xs font-bold text-good">In your plan</span>;
+    return <span className="shrink-0 rounded-full bg-good-tint px-2.5 py-0.5 text-xs font-bold text-good">In My courses</span>;
   return null;
 }
 
@@ -93,6 +94,23 @@ function CourseDetails({ subject, onPlanChanged }: { subject: Subject; onPlanCha
   const [topics, setTopics] = useState<Topic[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  // With a study plan, adding a course asks whether it joins the plan or is studied on its own.
+  const [hasStudyPlan, setHasStudyPlan] = useState(false);
+  const [choosing, setChoosing] = useState(false);
+
+  useEffect(() => {
+    api
+      .getStudyPlan()
+      .then((plan) => setHasStudyPlan(plan !== null))
+      .catch(() => setHasStudyPlan(false));
+  }, []);
+
+  async function addCourse(intoStudyPlan: boolean) {
+    await changePlan(() => api.addSubjectToPlan(subject.slug));
+    // The plan itself only changes once the learner approves the new draft.
+    if (intoStudyPlan) router.push(`/study-plan?add=${subject.slug}`);
+  }
 
   useEffect(() => {
     api
@@ -124,15 +142,32 @@ function CourseDetails({ subject, onPlanChanged }: { subject: Subject; onPlanCha
       {error && <Alert>{error}</Alert>}
 
       <div className="flex flex-wrap gap-2">
-        {!subject.in_plan && (
+        {!subject.in_plan && !choosing && (
           <button
             type="button"
             className="btn btn-primary"
             disabled={busy}
-            onClick={() => changePlan(() => api.addSubjectToPlan(subject.slug))}
+            onClick={() => (hasStudyPlan ? setChoosing(true) : void addCourse(false))}
           >
-            {busy ? "Adding…" : "Add to my plan"}
+            {busy ? "Adding…" : "Add to My courses"}
           </button>
+        )}
+        {!subject.in_plan && choosing && (
+          <div className="w-full space-y-2 rounded-lg border border-line bg-paper p-4">
+            <p className="font-bold">Add {subject.name} to your study plan, or study it on its own?</p>
+            <p className="text-sm text-ink-soft">
+              Adding it to your plan shows you an updated plan to approve first. Your current plan doesn&apos;t change
+              until you accept.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => addCourse(true)}>
+                Add to my study plan
+              </button>
+              <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => addCourse(false)}>
+                Study it on its own
+              </button>
+            </div>
+          </div>
         )}
         {subject.in_plan && !subject.current && (
           <button

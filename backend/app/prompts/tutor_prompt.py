@@ -333,7 +333,7 @@ Cover every one of these key concepts, each in its own section:
 {concepts}
 
 Fields:
-- content: the notes in Markdown, about 600-900 words, for beginners.
+- content: the notes in Markdown, about 600-900 words, for beginners. Use real line breaks, not "\\n".
   Start with a short introduction paragraph (no top-level # heading; the page shows the topic name).
   Then one "## " section per key concept: a plain-language explanation and a short runnable example in a
   ```{language} code fence, with what it prints shown in a comment.

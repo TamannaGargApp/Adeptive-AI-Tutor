@@ -22,6 +22,15 @@ import type {
   QuizResult,
   Recommendation,
   SessionSummary,
+  CourseSuggestion,
+  PlanDraft,
+  PlanGoal,
+  PlanSettings,
+  PlanStrategy,
+  StudyPlan,
+  StudySet,
+  StudySetSummary,
+  StudyTool,
   Subject,
   TestRunResult,
   TopicMaterial,
@@ -108,6 +117,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   // 204 No Content (e.g. after a delete) has no body to parse.
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/** Fired after the study plan changes, so the header's plan chip can refresh straight away. */
+export const STUDY_PLAN_CHANGED_EVENT = "study-plan:changed";
+
+async function planChanged<T>(pending: Promise<T>): Promise<T> {
+  const result = await pending;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(STUDY_PLAN_CHANGED_EVENT));
+  return result;
 }
 
 /** Streak days are counted in the learner's own timezone. */
@@ -238,6 +256,67 @@ export const api = {
       request<AdminTopic>(`/api/admin/topics/${slug}`, { method: "PUT", body: data }),
     moveTopic: (slug: string, direction: "up" | "down") =>
       request<AdminTopic[]>(`/api/admin/topics/${slug}/move`, { method: "POST", body: { direction } }),
+  },
+
+  // The learner's goal-based study plan (one per learner, across courses).
+  getStudyPlan: () => request<StudyPlan | null>(`/api/study-plan?${timezoneQuery()}`),
+  suggestPlanCourses: (goal: PlanGoal) =>
+    request<CourseSuggestion>("/api/study-plan/suggest-courses", { method: "POST", body: goal, timeoutMs: AI_TIMEOUT_MS }),
+  draftStudyPlan: (draft: {
+    goal: string;
+    level: Level;
+    courses: string[];
+    settings: PlanSettings;
+    strategy?: PlanStrategy | null;
+    change_request?: string | null;
+  }) =>
+    request<PlanDraft>(`/api/study-plan/draft?${timezoneQuery()}`, { method: "POST", body: draft, timeoutMs: AI_TIMEOUT_MS }),
+  acceptStudyPlan: (draft: PlanDraft) =>
+    planChanged(
+      request<StudyPlan>(`/api/study-plan/accept?${timezoneQuery()}`, {
+        method: "POST",
+        body: { goal: draft.goal, level: draft.level, courses: draft.courses, settings: draft.settings, strategy: draft.strategy },
+      }),
+    ),
+  replanStudyPlan: () => planChanged(request<StudyPlan>(`/api/study-plan/replan?${timezoneQuery()}`, { method: "POST" })),
+  setPlanTaskDone: (taskId: string, done: boolean) =>
+    planChanged(
+      request<StudyPlan>(`/api/study-plan/tasks/${taskId}?${timezoneQuery()}`, { method: "PATCH", body: { done } }),
+    ),
+  deleteStudyPlan: () => planChanged(request<void>("/api/study-plan", { method: "DELETE" })),
+
+  studySets: {
+    list: () => request<StudySetSummary[]>("/api/study-sets"),
+    create: (data: { title: string; file_name: string; content_type: string; text: string; file_base64: string | null }) =>
+      request<StudySetSummary>("/api/study-sets", { method: "POST", body: data, timeoutMs: AI_TIMEOUT_MS }),
+    get: (id: string) => request<StudySet>(`/api/study-sets/${id}`),
+    remove: (id: string) => request<void>(`/api/study-sets/${id}`, { method: "DELETE" }),
+    generate: (id: string, tool: StudyTool, regenerate = false) =>
+      request<StudySet>(`/api/study-sets/${id}/tools/${tool}${regenerate ? "?regenerate=true" : ""}`, {
+        method: "POST",
+        timeoutMs: AI_TIMEOUT_MS,
+      }),
+    /** New cards that don't repeat the deck; returns the updated set and the new cards' ids. */
+    moreFlashcards: (id: string) =>
+      request<{ study_set: StudySet; new_card_ids: string[] }>(`/api/study-sets/${id}/flashcards/more`, {
+        method: "POST",
+        timeoutMs: AI_TIMEOUT_MS,
+      }),
+    saveFlashcardProgress: (id: string, knownCardIds: string[]) =>
+      request<StudySet>(`/api/study-sets/${id}/flashcards/progress`, {
+        method: "PUT",
+        body: { known_card_ids: knownCardIds },
+      }),
+    saveQuizResult: (id: string, score: number, total: number) =>
+      request<StudySet>(`/api/study-sets/${id}/quiz-result`, { method: "POST", body: { score, total } }),
+    chat: (id: string, message: string) =>
+      request<{ reply: StudySet["chat"][number] }>(`/api/study-sets/${id}/chat`, {
+        method: "POST",
+        body: { message },
+        timeoutMs: AI_TIMEOUT_MS,
+      }),
+    /** Opens in a new tab; the browser sends the login cookie. */
+    downloadUrl: (id: string) => `${API_URL}/api/study-sets/${id}/download`,
   },
 
   getProgress: (subjectSlug?: string) => request<OverallProgress>(`/api/progress${subjectQuery(subjectSlug)}`),

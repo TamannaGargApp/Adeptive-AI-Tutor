@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     # Comma-separated emails of administrators. Admin access can only be granted here, never from the app.
     admin_emails: str = ""
 
+    # Where uploaded study set files are kept: "s3" (AWS S3) or "local" (a folder, for development).
+    storage_backend: str = "local"
+    local_storage_dir: str = "storage"
+    aws_region: str = ""
+    # Optional: leave empty to use the standard AWS credential chain (e.g. an IAM role on AWS).
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    s3_bucket: str = ""
+
     @field_validator("jwt_secret_key")
     @classmethod
     def require_strong_secret(cls, value: str) -> str:
