@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { Alert, Spinner } from "@/components/ui";
+import { Icon } from "@/components/Icon";
+import { Alert, PageHeader, Spinner } from "@/components/ui";
 import WaitingMessage from "@/components/WaitingMessage";
 import { api, errorMessage } from "@/lib/api";
 import { fileToBase64, readAttachment } from "@/lib/attachments";
@@ -50,14 +51,17 @@ export default function StudySetsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">Study sets</h1>
-          <p className="mt-2 max-w-2xl text-ink-soft">
-            Turn your own notes, handouts or textbook chapters into AI notes, a summary, flashcards, a quiz and a tutor,
-            on any subject.
-          </p>
-        </div>
+      <PageHeader
+        icon="notes"
+        title="Study sets"
+        description="Turn your own notes, handouts or textbook chapters into AI notes, a summary, flashcards, a quiz and a tutor, on any subject."
+        actions={
+          <button type="button" className="btn btn-primary" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+            <Icon name="upload" size={17} /> New study set
+          </button>
+        }
+      />
+      <div className="hidden">
         <input
           ref={fileInputRef}
           type="file"
@@ -69,9 +73,6 @@ export default function StudySetsPage() {
             if (file) void upload(file);
           }}
         />
-        <button type="button" className="btn btn-primary" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-          + New study set
-        </button>
       </div>
 
       {error && <Alert>{error}</Alert>}
@@ -96,19 +97,30 @@ export default function StudySetsPage() {
       {sets && sets.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sets.map((set) => (
-            <Link key={set.id} href={`/study-sets/${set.id}`} className="panel flex flex-col gap-3 p-5 transition-colors hover:border-blue/60">
+            <Link key={set.id} href={`/study-sets/${set.id}`} className="group panel card-lift flex flex-col gap-3 p-5">
+              <span className="flex items-start justify-between gap-3">
+                <span aria-hidden className="icon-tile h-12 w-12 bg-violet-tint text-violet">
+                  <Icon name="notes" size={22} />
+                </span>
+                <span className="rounded-md border border-line bg-paper px-2 py-0.5 text-[11px] font-bold text-ink-soft uppercase">
+                  {set.file_name.split(".").pop()}
+                </span>
+              </span>
               <span className="text-lg font-bold">{set.title}</span>
               <span className="truncate text-sm text-ink-soft">
                 {set.file_name} · {new Date(set.created_at).toLocaleDateString(undefined, DATE_FORMAT)}
               </span>
               <span className="flex flex-wrap gap-1.5">
                 {set.tools_ready.map((tool) => (
-                  <span key={tool} className="rounded bg-blue-tint px-2 py-0.5 text-xs font-bold text-blue-deep">
+                  <span key={tool} className="rounded-full bg-violet-tint px-2.5 py-0.5 text-xs font-bold text-violet">
                     {TOOL_LABELS[tool]}
                   </span>
                 ))}
               </span>
-              <span className="mt-auto text-sm text-ink-soft">
+              {set.tools_ready.length === 0 && (
+                <span className="text-xs text-ink-soft">Open it to create notes, a summary and more.</span>
+              )}
+              <span className="mt-auto border-t border-line pt-3 text-sm text-ink-soft empty:hidden">
                 {set.flashcards_total > 0 && `${set.flashcards_known}/${set.flashcards_total} cards known`}
                 {set.flashcards_total > 0 && set.last_quiz && " · "}
                 {set.last_quiz && `Quiz ${set.last_quiz.score}/${set.last_quiz.total}`}

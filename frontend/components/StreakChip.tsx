@@ -13,7 +13,7 @@ export default function StreakChip() {
   return (
     <Link
       href="/achievements"
-      className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1 text-sm font-bold hover:border-sun"
+      className="flex items-center gap-1.5 rounded-lg border border-line px-2 py-1 text-sm font-bold whitespace-nowrap hover:border-sun sm:gap-2 sm:px-2.5"
       title={streak.active_today ? "You've learned today" : "Learn today to keep your streak"}
       aria-label={`${streak.current} day streak, level ${level.level}. View achievements.`}
     >

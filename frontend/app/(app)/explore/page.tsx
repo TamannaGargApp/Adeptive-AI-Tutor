@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import Modal from "@/components/Modal";
-import { Alert, Spinner } from "@/components/ui";
+import { Icon } from "@/components/Icon";
+import { Alert, PageHeader, Spinner, TONES } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Subject, Topic } from "@/lib/types";
@@ -34,38 +35,42 @@ export default function ExploreCoursesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-3xl font-bold">Courses</h1>
-        <p className="mt-2 text-ink-soft">
-          Every course you can study. Open one to see its topics and add it to My courses.
-        </p>
-      </div>
+      <PageHeader
+        icon="compass"
+        title="Explore courses"
+        description="Every course you can study. Open one to see its topics and add it to My courses."
+      />
 
       {error && <Alert>{error}</Alert>}
       {!subjects && !error && <Spinner />}
 
       {subjects && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((subject) => (
+          {subjects.map((subject, index) => (
             <button
               key={subject.slug}
               type="button"
               onClick={() => setOpenSlug(subject.slug)}
               aria-haspopup="dialog"
-              className={`panel flex flex-col gap-3 p-5 text-left transition-colors hover:border-blue/60 ${
-                subject.current ? "border-blue" : ""
+              className={`group panel card-lift flex flex-col gap-3 p-5 text-left ${
+                subject.current ? "border-violet/50 ring-2 ring-violet/15" : ""
               }`}
             >
               <span className="flex w-full items-start justify-between gap-3">
-                <span className="text-xl font-bold">{subject.name}</span>
+                <span aria-hidden className={`icon-tile h-12 w-12 ${TONES[index % TONES.length]}`}>
+                  <Icon name={subject.language === "javascript" ? "bolt" : "code"} size={22} />
+                </span>
                 <PlanBadge subject={subject} />
               </span>
+              <span className="text-xl font-bold">{subject.name}</span>
               <span className="line-clamp-3 text-sm text-ink-soft">{subject.description}</span>
               <span className="mt-auto flex items-center justify-between text-sm">
                 <span className="text-ink-soft">
                   {subject.topic_count} topics · {LANGUAGE_LABELS[subject.language] ?? subject.language}
                 </span>
-                <span className="font-bold text-blue">Details →</span>
+                <span className="inline-flex items-center gap-1 font-bold text-violet">
+                  Details <Icon name="arrow" size={14} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
               </span>
             </button>
           ))}

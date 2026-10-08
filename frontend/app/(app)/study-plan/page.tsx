@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 
 import PlanWizard, { type WizardMode } from "@/components/PlanWizard";
 import { formatPlanDate, PhaseTimeline, PlanTaskItem, TodayPlanCard } from "@/components/StudyPlan";
-import { Alert, CompletionBar, Spinner } from "@/components/ui";
+import { Alert, CompletionBar, PageHeader, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { WEEKDAY_LABELS } from "@/lib/labels";
@@ -67,16 +67,16 @@ function StudyPlanPageContent() {
     const wizardMode = plan === null ? ({ kind: "new" } as WizardMode) : (mode as WizardMode);
     return (
       <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-        <div>
-          <h1 className="text-3xl font-bold">
-            {plan === null ? "Create your study plan" : wizardMode.kind === "edit" ? "Edit your study plan" : "Update your study plan"}
-          </h1>
-          <p className="mt-2 text-ink-soft">
-            {plan === null
+        <PageHeader
+          icon="calendar"
+          eyebrow="Study plan"
+          title={plan === null ? "Create your study plan" : wizardMode.kind === "edit" ? "Edit your study plan" : "Update your study plan"}
+          description={
+            plan === null
               ? "Tell us your goal. We'll suggest courses, work out the timing, and build a plan you can adjust before saving."
-              : "Here's a draft of your changed plan. Your current plan stays as it is until you accept."}
-          </p>
-        </div>
+              : "Here's a draft of your changed plan. Your current plan stays as it is until you accept."
+          }
+        />
         <PlanWizard
           plan={plan}
           mode={wizardMode}
@@ -94,15 +94,14 @@ function StudyPlanPageContent() {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-ink-soft">Your study plan</p>
-          <h1 className="text-3xl font-bold">{plan.goal}</h1>
-          <p className="mt-1 text-ink-soft">
-            {plan.settings.study_days.map((day) => WEEKDAY_LABELS[day]).join(", ")} · {plan.settings.minutes_per_day} min per day
-            {plan.settings.target_date ? ` · deadline ${formatPlanDate(plan.settings.target_date)}` : ""}
-          </p>
-        </div>
+      <PageHeader
+        icon="calendar"
+        eyebrow="Your study plan"
+        title={plan.goal}
+        description={`${plan.settings.study_days.map((day) => WEEKDAY_LABELS[day]).join(", ")} · ${plan.settings.minutes_per_day} min per day${
+          plan.settings.target_date ? ` · deadline ${formatPlanDate(plan.settings.target_date)}` : ""
+        }`}
+      >
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => run(api.replanStudyPlan)}>
             Replan from today
@@ -126,7 +125,7 @@ function StudyPlanPageContent() {
             Delete plan
           </button>
         </div>
-      </div>
+      </PageHeader>
 
       {error && <Alert>{error}</Alert>}
 

@@ -40,18 +40,22 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3">
         <Link href="/dashboard" className="flex shrink-0 items-center text-ink">
           <LogoMark height={48} />
         </Link>
         {onboarded && (
-          <Link href="/explore" aria-current={pathname.startsWith("/explore") ? "page" : undefined} className={linkClass("/explore")}>
+          <Link href="/explore" aria-current={pathname.startsWith("/explore") ? "page" : undefined} className={`hidden sm:inline-block ${linkClass("/explore")}`}>
             Courses
           </Link>
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {onboarded && <PlanChip />}
+          {onboarded && (
+            <div className="hidden sm:block">
+              <PlanChip />
+            </div>
+          )}
           {onboarded && <StreakChip />}
           {onboarded && (
             <div className="hidden sm:block">

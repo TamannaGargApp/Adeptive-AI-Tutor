@@ -5,7 +5,8 @@ import type { Topic, TopicProgress } from "@/lib/types";
 
 import CompletionChecklist from "./CompletionChecklist";
 import Countdown from "./Countdown";
-import { CompletionBadge, CompletionBar } from "./ui";
+import { Icon } from "./Icon";
+import { CompletionBadge, CompletionBar, ProgressRing } from "./ui";
 
 /** A compact, clickable topic card. Study options and details open in a dialog (TopicDetail). */
 export default function TopicCard({
@@ -21,32 +22,45 @@ export default function TopicCard({
   const met = progress?.requirements.filter((requirement) => requirement.met).length ?? 0;
   const total = progress?.requirements.length ?? 0;
 
+  const done = progress?.completed ?? false;
+
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-haspopup="dialog"
-      className="panel flex w-full flex-col gap-3 p-5 text-left transition-colors hover:border-blue/60"
+      className="group panel card-lift flex w-full flex-col gap-3 p-5 text-left"
     >
-      <span className="flex w-full items-start justify-between gap-3">
-        <span className="text-lg leading-snug font-bold">{topic.name}</span>
+      <span className="flex w-full items-center justify-between gap-3">
+        <span
+          aria-hidden
+          className={`grid h-9 w-9 place-items-center rounded-xl text-sm font-bold ${
+            done ? "bg-good-tint text-good" : percent > 0 ? "bg-brand" : "bg-paper text-ink-soft"
+          }`}
+        >
+          {done ? <Icon name="check" size={17} /> : topic.order + 1}
+        </span>
         <CompletionBadge status={progress?.completion_status ?? "not_started"} />
       </span>
+      <span className="text-lg leading-snug font-bold">{topic.name}</span>
       <span className="line-clamp-2 text-sm text-ink-soft">{topic.description}</span>
 
-      <span className="block w-full space-y-1.5">
-        <CompletionBar percent={percent} label={`${topic.name} completion`} />
-        <span className="flex justify-between text-xs text-ink-soft">
-          <span>{percent}% complete</span>
+      <span className="mt-auto flex w-full items-center gap-3 border-t border-line pt-4">
+        <ProgressRing percent={percent} size={46} stroke={5} label={`${topic.name} completion`}>
+          <span className="text-[11px] font-bold">{percent}%</span>
+        </ProgressRing>
+        <span className="min-w-0 flex-1 text-sm">
+          <span className="block font-bold">{done ? "Complete" : percent > 0 ? "Keep going" : "Not started yet"}</span>
           {total > 0 && (
-            <span>
-              {met} of {total} requirements
+            <span className="text-ink-soft">
+              {met} of {total} requirements met
             </span>
           )}
         </span>
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-paper text-violet transition-transform group-hover:translate-x-0.5">
+          <Icon name="arrow" size={15} />
+        </span>
       </span>
-
-      <span className="mt-auto text-sm font-bold text-blue">Open topic →</span>
     </button>
   );
 }

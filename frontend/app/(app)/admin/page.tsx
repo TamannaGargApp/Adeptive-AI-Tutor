@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import AdminContent from "@/components/AdminContent";
-import { Alert, Spinner } from "@/components/ui";
+import { Alert, PageHeader, Spinner, StatTile } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { AdminStats, AdminUserRow } from "@/lib/types";
@@ -33,10 +33,7 @@ export default function AdminPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-3xl font-bold">Admin</h1>
-        <p className="mt-2 text-ink-soft">Platform activity, learners, and course content.</p>
-      </div>
+      <PageHeader icon="shield" eyebrow="Administrator" title="Admin" description="Platform activity, learners, and course content." />
 
       <div role="tablist" aria-label="Admin sections" className="flex gap-1 border-b border-line">
         {TABS.map((item) => (
@@ -80,19 +77,18 @@ function Overview() {
 
   return (
     <div className="space-y-6">
-      <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {[
-          { label: "Learners", value: stats.users },
-          { label: "Active in last 7 days", value: stats.active_last_7_days },
-          { label: "Questions answered", value: stats.questions_answered },
-          { label: "Tests submitted", value: stats.tests_submitted },
-        ].map((stat) => (
-          <div key={stat.label} className="panel p-4">
-            <dt className="text-sm text-ink-soft">{stat.label}</dt>
-            <dd className="text-3xl font-bold">{stat.value.toLocaleString()}</dd>
-          </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {(
+          [
+            { label: "Learners", value: stats.users, icon: "user" },
+            { label: "Active in last 7 days", value: stats.active_last_7_days, icon: "flame" },
+            { label: "Questions answered", value: stats.questions_answered, icon: "target" },
+            { label: "Tests submitted", value: stats.tests_submitted, icon: "trophy" },
+          ] as const
+        ).map((stat, index) => (
+          <StatTile key={stat.label} icon={stat.icon} tone={index} label={stat.label} value={stat.value.toLocaleString()} />
         ))}
-      </dl>
+      </div>
 
       <section className="panel overflow-x-auto">
         <table className="w-full text-left text-sm">

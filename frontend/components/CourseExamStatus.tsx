@@ -23,7 +23,7 @@ export default function CourseExamStatus({ progress, compact = false }: { progre
 
   if (progress.course_completed) {
     return (
-      <div className="rounded-lg border-l-4 border-good bg-good-tint px-4 py-3 text-sm" role="status">
+      <div className="rounded-xl border-l-4 border-good bg-good-tint px-4 py-3 text-sm" role="status">
         <p className="font-bold text-good">Course complete</p>
         <p className="text-ink">{remark}</p>
       </div>
@@ -32,7 +32,7 @@ export default function CourseExamStatus({ progress, compact = false }: { progre
 
   if (progress.course_exam_unlocked && progress.course_exam_locked_until) {
     return (
-      <div className="rounded-lg border-l-4 border-bad bg-bad-tint px-4 py-3 text-sm" role="status">
+      <div className="rounded-xl border-l-4 border-bad bg-bad-tint px-4 py-3 text-sm" role="status">
         <p className="font-bold text-bad">Course exam: not passed yet</p>
         <p className="text-ink">
           {progress.course_exam_best !== null ? `Best score ${progress.course_exam_best}%. ` : ""}
@@ -44,7 +44,7 @@ export default function CourseExamStatus({ progress, compact = false }: { progre
 
   if (progress.course_exam_unlocked) {
     return (
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border-l-4 border-sun bg-sun-tint px-4 py-3 text-sm">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border-l-4 border-sun bg-sun-tint px-4 py-3 text-sm">
         <p className="min-w-0 flex-1">
           <span className="block font-bold">Course exam unlocked</span>
           {!compact && <span className="text-ink">{remark}</span>}
@@ -57,7 +57,7 @@ export default function CourseExamStatus({ progress, compact = false }: { progre
   }
 
   return (
-    <div className="rounded-lg border border-line bg-paper px-4 py-3 text-sm">
+    <div className="rounded-xl border border-line bg-paper px-4 py-3 text-sm">
       <p className="flex items-center gap-2 font-bold text-ink-soft">
         {LOCK_ICON}
         Course exam locked

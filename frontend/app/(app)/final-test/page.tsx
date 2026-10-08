@@ -8,7 +8,7 @@ import Countdown from "@/components/Countdown";
 import CourseExamStatus from "@/components/CourseExamStatus";
 import FinalTestResults from "@/components/FinalTestResults";
 import FinalTestRunner from "@/components/FinalTestRunner";
-import { Alert, Spinner } from "@/components/ui";
+import { Alert, PageHeader, Spinner } from "@/components/ui";
 import WaitingMessage from "@/components/WaitingMessage";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -190,10 +190,7 @@ function TestPicker({
   const progressBySlug = new Map(progress?.topics.map((item) => [item.topic_slug, item]));
   return (
     <>
-      <div>
-        <h1 className="text-3xl font-bold">Final tests</h1>
-        <p className="mt-2 text-ink-soft">Timed tests with answers revealed only at the end.</p>
-      </div>
+      <PageHeader icon="trophy" title="Final tests" description="Timed tests with answers revealed only at the end." />
 
       {course && progress && !progress.course_exam_unlocked && (
         <div className="space-y-2">

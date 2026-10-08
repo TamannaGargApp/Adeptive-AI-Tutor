@@ -70,7 +70,7 @@ export default function RegisterPage() {
 
   return (
     <>
-      <div className="mb-2 grid h-11 w-11 place-items-center rounded-xl bg-blue-tint text-blue-deep" aria-hidden>
+      <div className="bg-brand mb-3 grid h-12 w-12 place-items-center rounded-2xl" aria-hidden>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="9" cy="8" r="3.5" />
           <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />

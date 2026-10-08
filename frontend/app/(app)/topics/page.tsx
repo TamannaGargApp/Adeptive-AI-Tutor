@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import Modal from "@/components/Modal";
 import TopicCard, { TopicDetail } from "@/components/TopicCard";
-import { Alert, Spinner } from "@/components/ui";
+import { Alert, PageHeader, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Topic, TopicProgress } from "@/lib/types";
@@ -31,10 +31,33 @@ export default function TopicsPage() {
     // Reload when the learner switches course from the navbar.
   }, [user?.current_subject]);
 
+  const statusCount = (test: (progress: TopicProgress) => boolean) =>
+    Object.values(progressBySlug).filter(test).length;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <h1 className="text-3xl font-bold">{subjectName ? `${subjectName} topics` : "Topics"}</h1>
-      <p className="mt-2 text-ink-soft">Open a topic to see what&apos;s left and choose how to study it.</p>
+      <PageHeader
+        icon="layers"
+        eyebrow={subjectName ? `${subjectName} course` : undefined}
+        title="Topics"
+        description="Open a topic to see what's left and choose how to study it."
+      >
+        {topics && (
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {[
+              { label: "Complete", count: statusCount((p) => p.completed), dot: "bg-good" },
+              { label: "In progress", count: statusCount((p) => !p.completed && p.completion_percent > 0), dot: "bg-violet" },
+              { label: "Not started", count: topics.length - statusCount((p) => p.completion_percent > 0), dot: "bg-ink-soft/50" },
+            ].map((item) => (
+              <li key={item.label} className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1">
+                <span aria-hidden className={`h-2 w-2 rounded-full ${item.dot}`} />
+                <span className="font-bold">{item.count}</span>
+                <span className="text-ink-soft">{item.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PageHeader>
 
       <div className="mt-6">
         {error && <Alert>{error}</Alert>}

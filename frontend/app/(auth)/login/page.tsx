@@ -44,7 +44,7 @@ function LoginForm() {
 
   return (
     <>
-      <div className="mb-2 grid h-11 w-11 place-items-center rounded-xl bg-blue-tint text-blue-deep" aria-hidden>
+      <div className="bg-brand mb-3 grid h-12 w-12 place-items-center rounded-2xl" aria-hidden>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="4" y="11" width="16" height="9" rx="2" />
           <path d="M8 11V7a4 4 0 0 1 8 0v4" />

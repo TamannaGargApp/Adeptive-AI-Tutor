@@ -7,7 +7,8 @@ import ChatHistory from "@/components/ChatHistory";
 import ChatWindow from "@/components/ChatWindow";
 import PracticePanel from "@/components/PracticePanel";
 import ReadingPanel from "@/components/ReadingPanel";
-import Sidebar from "@/components/Sidebar";
+import { Icon } from "@/components/Icon";
+import Sidebar, { MODE_ICONS } from "@/components/Sidebar";
 import { Alert, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -133,9 +134,13 @@ function TutorWorkspace() {
 
       <section className="flex min-h-0 flex-1 flex-col" aria-label="Tutor">
         <div className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-3 sm:px-6">
-          <h1 className="min-w-0 flex-1 truncate text-lg font-bold">
-            {topic?.name ?? "Tutor"} <span className="font-normal text-ink-soft">· {MODE_LABELS[mode]}</span>
-          </h1>
+          <span aria-hidden className="bg-brand hidden h-10 w-10 shrink-0 place-items-center rounded-xl sm:grid">
+            <Icon name={MODE_ICONS[mode]} size={19} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold tracking-wider text-violet uppercase">{MODE_LABELS[mode]} mode</p>
+            <h1 className="truncate text-lg leading-tight font-bold">{topic?.name ?? "Tutor"}</h1>
+          </div>
           {mode === "learn" && activeSession && (
             <>
               <button type="button" className="btn btn-secondary px-3 py-1.5 text-sm" onClick={() => setHistoryOpen(true)}>

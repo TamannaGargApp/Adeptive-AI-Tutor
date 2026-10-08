@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import CourseExamStatus from "@/components/CourseExamStatus";
-import { Alert, CompletionBar, Spinner } from "@/components/ui";
+import { Icon } from "@/components/Icon";
+import { Alert, CompletionBar, PageHeader, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { OverallProgress, StudyPlan, Subject } from "@/lib/types";
@@ -80,17 +81,16 @@ export default function CoursesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">My courses</h1>
-          <p className="mt-2 text-ink-soft">
-            The courses in your learning plan. Switch between them here or from the course menu at the top.
-          </p>
-        </div>
-        <Link href="/explore" className="btn btn-secondary">
-          Browse all courses
-        </Link>
-      </div>
+      <PageHeader
+        icon="book"
+        title="My courses"
+        description="The courses in your learning plan. Switch between them here or from the course menu at the top."
+        actions={
+          <Link href="/explore" className="btn btn-secondary">
+            Browse all courses
+          </Link>
+        }
+      />
 
       {error && <Alert>{error}</Alert>}
       {!subjects && !error && <Spinner />}
@@ -104,15 +104,18 @@ export default function CoursesPage() {
             return (
               <article
                 key={subject.slug}
-                className={`panel flex flex-col gap-4 p-5 ${subject.current ? "border-blue ring-2 ring-blue/20" : ""}`}
+                className={`panel flex flex-col gap-4 p-5 sm:p-6 ${subject.current ? "border-violet/50 ring-2 ring-violet/15" : ""}`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
+                <div className="flex items-start gap-4">
+                  <span aria-hidden className={`icon-tile h-12 w-12 shrink-0 ${subject.current ? "bg-brand" : "bg-violet-tint text-violet"}`}>
+                    <Icon name={subject.language === "javascript" ? "bolt" : "code"} size={22} />
+                  </span>
+                  <div className="min-w-0 flex-1">
                     <h2 className="text-xl font-bold">{subject.name}</h2>
                     <p className="text-sm text-ink-soft">{subject.topic_count} topics</p>
                   </div>
                   {subject.current ? (
-                    <span className="rounded-full bg-blue-tint px-2.5 py-0.5 text-xs font-bold text-blue-deep">Current course</span>
+                    <span className="rounded-full bg-violet-tint px-2.5 py-0.5 text-xs font-bold text-violet">Current course</span>
                   ) : null}
                 </div>
                 {studyPlan && (

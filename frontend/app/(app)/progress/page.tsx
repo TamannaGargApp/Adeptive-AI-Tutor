@@ -9,7 +9,7 @@ import Modal from "@/components/Modal";
 import ProgressCard from "@/components/ProgressCard";
 import RecommendationCard from "@/components/RecommendationCard";
 import TopicSummaryCard from "@/components/TopicSummaryCard";
-import { Alert, Spinner } from "@/components/ui";
+import { Alert, PageHeader, ProgressRing, SectionHeading, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { OverallProgress, Recommendation } from "@/lib/types";
@@ -36,43 +36,63 @@ export default function ProgressPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8">
-      <div>
-        <h1 className="text-3xl font-bold">
-          Your progress{progress ? <span className="text-ink-soft"> · {progress.subject_name}</span> : null}
-        </h1>
+      <PageHeader
+        icon="chart"
+        eyebrow={progress ? `${progress.subject_name} course` : undefined}
+        title="Your progress"
+        description="How far you've come, what's going well, and what to work on next."
+        actions={
+          progress && (
+            <ProgressRing percent={progress.completion_percent} size={84} stroke={8} label="Course completion">
+              <span>
+                <span className="block text-lg leading-none font-bold">{progress.completion_percent}%</span>
+                <span className="text-[10px] font-bold tracking-wide text-ink-soft uppercase">course</span>
+              </span>
+            </ProgressRing>
+          )
+        }
+      >
         {progress && (
-          <p className="mt-2 text-ink-soft">
-            {progress.completion_percent}% of the course complete · {progress.topics_completed} of{" "}
-            {progress.topics.length} topics complete · {progress.correct_answers} of {progress.questions_attempted} first
-            attempts correct ({progress.accuracy}%).
-          </p>
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: "Topics complete", value: `${progress.topics_completed} / ${progress.topics.length}` },
+              { label: "Questions answered", value: progress.questions_attempted },
+              { label: "Right first time", value: progress.correct_answers },
+              { label: "Accuracy", value: `${progress.accuracy}%` },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-xl border border-line bg-surface/80 px-4 py-3">
+                <dt className="text-xs text-ink-soft">{stat.label}</dt>
+                <dd className="text-xl font-bold">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
         )}
-      </div>
+      </PageHeader>
 
       {error && <Alert>{error}</Alert>}
       {!progress && !error && <Spinner />}
 
-      {progress && <CourseExamStatus progress={progress} />}
+      {progress && (
+        <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+          <div className="min-w-0">
+            <ActivityCharts />
+          </div>
+          <div className="space-y-6">
+            {recommendation && <RecommendationCard recommendation={recommendation} />}
+            <CourseExamStatus progress={progress} />
+          </div>
+        </div>
+      )}
 
       {progress && <FeedbackPanel subjectSlug={progress.subject_slug} />}
 
-      <ActivityCharts />
-
-      {recommendation && <RecommendationCard recommendation={recommendation} />}
-
       {progress && (
-        <p className="text-sm text-ink-soft">
-          A topic is 100% complete when you&apos;ve answered at least 10 questions, got 9 of your last 10 right,
-          answered every key concept correctly, and passed its final test with 70% or more. The course is complete
-          when every topic is complete and you pass the course exam.
-        </p>
-      )}
-
-      {progress && (
-        <section aria-labelledby="topics-heading" className="space-y-3">
-          <h2 id="topics-heading" className="text-xl font-bold">
-            Topics
-          </h2>
+        <section aria-labelledby="topics-heading">
+          <SectionHeading
+            id="topics-heading"
+            title="Topics"
+            description="A topic is complete when you've answered at least 10 questions, got 9 of your last 10 right, answered every key concept correctly, and passed its final test with 70% or more."
+          />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {progress.topics.map((topic) => (
               <TopicSummaryCard key={topic.topic_slug} progress={topic} onOpen={() => setOpenTopic(topic.topic_slug)} />

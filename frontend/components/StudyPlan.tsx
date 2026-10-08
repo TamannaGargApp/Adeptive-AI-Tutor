@@ -9,6 +9,9 @@ import { useAuth } from "@/lib/auth";
 import { parseLocalDate, planTaskLink, WEEKDAY_LABELS } from "@/lib/labels";
 import type { PlanPhase, PlanSettings, PlanTask, StudyPlan } from "@/lib/types";
 
+import { Icon, type IconName } from "./Icon";
+import { CompletionBar } from "./ui";
+
 const DAY_FORMAT: Intl.DateTimeFormatOptions = { weekday: "long", month: "short", day: "numeric" };
 const SHORT_FORMAT: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 const MINUTE_OPTIONS = [15, 30, 45, 60, 90, 120];
@@ -25,6 +28,15 @@ export function isoDate(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
+
+const TASK_ICONS: Record<PlanTask["type"], IconName> = {
+  read: "book",
+  learn: "chat",
+  practice: "target",
+  quiz: "quiz",
+  final_test: "trophy",
+  course_exam: "shield",
+};
 
 /** One task: tick box, what to do, and a Start button that opens the right page in the right course. */
 export function PlanTaskItem({ task, onToggle }: { task: PlanTask; onToggle?: (task: PlanTask) => void }) {
@@ -46,7 +58,11 @@ export function PlanTaskItem({ task, onToggle }: { task: PlanTask; onToggle?: (t
   }
 
   return (
-    <li className={`flex items-start gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 ${task.done ? "opacity-60" : ""}`}>
+    <li
+      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+        task.done ? "border-transparent bg-paper" : "border-line bg-surface hover:border-violet/40"
+      }`}
+    >
       {onToggle && (
         <input
           type="checkbox"
@@ -54,13 +70,21 @@ export function PlanTaskItem({ task, onToggle }: { task: PlanTask; onToggle?: (t
           disabled={task.auto_done}
           onChange={() => onToggle(task)}
           aria-label={`Mark "${task.title}" as ${task.done ? "not done" : "done"}`}
-          className="mt-1 h-4 w-4 shrink-0 accent-blue"
+          className="h-[18px] w-[18px] shrink-0 accent-violet"
         />
       )}
+      <span
+        aria-hidden
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${task.done ? "bg-good-tint text-good" : "bg-violet-tint text-violet"}`}
+      >
+        <Icon name={task.done ? "check" : TASK_ICONS[task.type]} size={17} />
+      </span>
       <div className="min-w-0 flex-1">
-        <p className={`font-bold ${task.done ? "line-through" : ""}`}>
-          <span className="mr-2 rounded bg-blue-tint px-1.5 py-0.5 text-xs text-blue-deep">{task.subject_name}</span>
+        <p className={`font-bold ${task.done ? "text-ink-soft line-through" : ""}`}>
           {task.title}
+          <span className="ml-2 inline-block rounded-md bg-blue-tint px-1.5 py-0.5 align-middle text-[11px] text-blue-deep">
+            {task.subject_name}
+          </span>
         </p>
         <p className="text-sm text-ink-soft">
           {task.detail} · {task.minutes} min
@@ -89,25 +113,35 @@ export function TodayPlanCard({
   const today = plan.days.find((day) => day.date === plan.today);
   const next = plan.days.find((day) => day.date > plan.today && day.tasks.some((task) => !task.done));
   const allDone = plan.total_tasks > 0 && plan.done_tasks === plan.total_tasks;
+  const doneToday = today?.tasks.filter((task) => task.done).length ?? 0;
+  const totalToday = today?.tasks.length ?? 0;
 
   return (
-    <section className="rounded-xl border-2 border-sun bg-sun-tint p-5" aria-labelledby="today-plan-heading">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="today-plan-heading" className="text-lg font-bold">
-          Today&apos;s plan
-        </h2>
-        <span className="text-sm text-ink-soft">
-          {plan.done_tasks} of {plan.total_tasks} tasks done
-          {compact && (
-            <>
-              {" · "}
-              <Link href="/study-plan" className="font-bold text-blue hover:text-blue-deep">
-                Full plan
-              </Link>
-            </>
-          )}
+    <section className="panel p-5 sm:p-6" aria-labelledby="today-plan-heading">
+      <div className="flex flex-wrap items-center gap-3">
+        <span aria-hidden className="icon-tile h-11 w-11 bg-sun-tint text-ink">
+          <Icon name="calendar" size={21} />
         </span>
+        <div className="min-w-0 flex-1">
+          <h2 id="today-plan-heading" className="text-lg font-bold">
+            Today&apos;s plan
+          </h2>
+          <p className="text-sm text-ink-soft">
+            {totalToday ? `${doneToday} of ${totalToday} done today` : "No study scheduled today"} · {plan.done_tasks} of{" "}
+            {plan.total_tasks} in the whole plan
+          </p>
+        </div>
+        {compact && (
+          <Link href="/study-plan" className="btn btn-secondary px-3 py-1.5 text-sm">
+            Full plan
+          </Link>
+        )}
       </div>
+      {totalToday > 0 && (
+        <div className="mt-4">
+          <CompletionBar percent={Math.round((doneToday / totalToday) * 100)} label="Today's tasks done" />
+        </div>
+      )}
       {allDone ? (
         <p className="mt-2">Every task in your plan is done. Brilliant work!</p>
       ) : today ? (
@@ -137,7 +171,7 @@ export function TodayPlanCard({
   );
 }
 
-const PHASE_COLORS = ["bg-blue", "bg-sun", "bg-good", "bg-bad", "bg-ink-soft"];
+const PHASE_COLORS = ["bg-blue", "bg-violet", "bg-cyan", "bg-magenta", "bg-sun"];
 
 /** The plan's phases, e.g. "Oct 6 – Oct 26: Python 100%", with a bar showing each course's share. */
 export function PhaseTimeline({ phases, courseOrder }: { phases: PlanPhase[]; courseOrder: string[] }) {

@@ -2,7 +2,7 @@
 
 import ActivityCharts from "@/components/ActivityCharts";
 import { BadgeGrid, LevelProgress, StreakCalendar, streakMessage } from "@/components/Achievements";
-import { Spinner } from "@/components/ui";
+import { PageHeader, Spinner } from "@/components/ui";
 import { useGamification } from "@/lib/gamification";
 
 export default function AchievementsPage() {
@@ -10,10 +10,11 @@ export default function AchievementsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8">
-      <div>
-        <h1 className="text-3xl font-bold">Achievements</h1>
-        <p className="mt-2 text-ink-soft">Keep your streak alive, level up with XP, and collect badges as you learn.</p>
-      </div>
+      <PageHeader
+        icon="trophy"
+        title="Achievements"
+        description="Keep your streak alive, level up with XP, and collect badges as you learn."
+      />
 
       {!summary && <Spinner />}
 
