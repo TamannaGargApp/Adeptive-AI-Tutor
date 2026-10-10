@@ -5,7 +5,7 @@ import { isRunnable } from "@/lib/codeRunner";
 
 import RunnableCode from "./RunnableCode";
 
-/** Python and JavaScript code blocks get a Run button; other code is shown as-is. */
+/** Code blocks in a language the browser can run get a Run button; other code is shown as-is. */
 function CodeBlock({ children }: { children: React.ReactNode }) {
   const child = Children.toArray(children)[0];
   if (isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {

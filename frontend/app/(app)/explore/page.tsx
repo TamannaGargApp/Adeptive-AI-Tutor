@@ -9,9 +9,9 @@ import { Icon } from "@/components/Icon";
 import { Alert, PageHeader, Spinner, TONES } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { courseIcon, languageLabel } from "@/lib/courses";
 import type { Subject, Topic } from "@/lib/types";
 
-const LANGUAGE_LABELS: Record<string, string> = { python: "Python", javascript: "JavaScript" };
 
 /** The course catalogue: every course, with details and an option to add it to the learner's plan. */
 export default function ExploreCoursesPage() {
@@ -58,7 +58,7 @@ export default function ExploreCoursesPage() {
             >
               <span className="flex w-full items-start justify-between gap-3">
                 <span aria-hidden className={`icon-tile h-12 w-12 ${TONES[index % TONES.length]}`}>
-                  <Icon name={subject.language === "javascript" ? "bolt" : "code"} size={22} />
+                  <Icon name={courseIcon(`${subject.slug} ${subject.name}`)} size={22} />
                 </span>
                 <PlanBadge subject={subject} />
               </span>
@@ -66,7 +66,7 @@ export default function ExploreCoursesPage() {
               <span className="line-clamp-3 text-sm text-ink-soft">{subject.description}</span>
               <span className="mt-auto flex items-center justify-between text-sm">
                 <span className="text-ink-soft">
-                  {subject.topic_count} topics · {LANGUAGE_LABELS[subject.language] ?? subject.language}
+                  {subject.topic_count} topics · {languageLabel(subject.language)}
                 </span>
                 <span className="inline-flex items-center gap-1 font-bold text-violet">
                   Details <Icon name="arrow" size={14} className="transition-transform group-hover:translate-x-0.5" />

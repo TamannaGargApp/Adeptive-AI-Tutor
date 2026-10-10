@@ -15,7 +15,7 @@ const FONTS_URL =
 
 export const metadata: Metadata = {
   title: "Adaptive AI Tutor",
-  description: "Learn Python and JavaScript through personalized explanations, practice, quizzes, and intelligent feedback.",
+  description: "Learn to code through personalized explanations, practice, quizzes, and intelligent feedback.",
 };
 
 // Runs before the page is painted, so a saved dark theme never flashes light first.

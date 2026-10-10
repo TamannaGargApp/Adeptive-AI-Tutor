@@ -9,6 +9,7 @@ import { Icon } from "@/components/Icon";
 import { Alert, CompletionBar, PageHeader, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { courseIcon } from "@/lib/courses";
 import type { OverallProgress, StudyPlan, Subject } from "@/lib/types";
 
 export default function CoursesPage() {
@@ -108,7 +109,7 @@ export default function CoursesPage() {
               >
                 <div className="flex items-start gap-4">
                   <span aria-hidden className={`icon-tile h-12 w-12 shrink-0 ${subject.current ? "bg-brand" : "bg-violet-tint text-violet"}`}>
-                    <Icon name={subject.language === "javascript" ? "bolt" : "code"} size={22} />
+                    <Icon name={courseIcon(`${subject.slug} ${subject.name}`)} size={22} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <h2 className="text-xl font-bold">{subject.name}</h2>

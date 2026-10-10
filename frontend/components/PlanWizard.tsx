@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { courseIcon } from "@/lib/courses";
 import { LEVEL_LABELS, LEVELS } from "@/lib/labels";
 import type { CourseSuggestion, Level, PlanDraft, PlanSettings, StudyPlan, Subject } from "@/lib/types";
 
@@ -23,9 +24,9 @@ interface ChatEntry {
 }
 
 const EXAMPLE_GOALS = [
-  "Learn Python from scratch",
-  "Learn Python and JavaScript to build web apps",
-  "Prepare for a Python job interview",
+  "Learn to code from scratch",
+  "Build my own projects in 3 months",
+  "Prepare for a coding job interview",
 ];
 
 const DEFAULT_SETTINGS: PlanSettings = { study_days: [0, 1, 2, 3, 4], minutes_per_day: 45, target_date: null };
@@ -169,7 +170,7 @@ export default function PlanWizard({
               maxLength={500}
               value={goal}
               onChange={(event) => setGoal(event.target.value)}
-              placeholder="For example: learn Python and JavaScript so I can build web apps"
+              placeholder="For example: learn to code so I can build my own projects"
             />
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold tracking-wider text-ink-soft uppercase">Try</span>
@@ -399,7 +400,7 @@ function CourseChoice({
         aria-hidden
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${checked ? "bg-brand" : "bg-violet-tint text-violet"}`}
       >
-        <Icon name={slug.includes("javascript") ? "bolt" : "code"} size={19} />
+        <Icon name={courseIcon(`${slug} ${name}`)} size={19} />
       </span>
       <span className="min-w-0 flex-1 pr-6">
         <span className="flex flex-wrap items-center gap-2">
@@ -627,7 +628,7 @@ function DraftReview({
               value={message}
               disabled={busy}
               onChange={(event) => onMessageChange(event.target.value)}
-              placeholder='e.g. "Finish JavaScript sooner"'
+              placeholder='e.g. "Finish the first course sooner"'
             />
             <button type="submit" className="btn btn-primary px-4 py-2 text-sm" disabled={busy || !message.trim()}>
               Send

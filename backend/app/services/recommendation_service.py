@@ -48,8 +48,8 @@ def choose_recommendation(
     progress_by_slug: dict[str, TopicProgress],
     default_difficulty: Level,
     *,
-    subject_slug: str = "python",
-    subject_name: str = "Python",
+    subject_slug: str,
+    subject_name: str,
     course_exam_passed: bool = False,
 ) -> RecommendationResponse:
     def recommend(topic: Topic | None, reason: str, message: str, mode: str, difficulty: Level) -> RecommendationResponse:

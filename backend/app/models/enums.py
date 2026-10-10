@@ -13,6 +13,21 @@ class LearningGoal(StrEnum):
     INTERVIEW_PREPARATION = "interview_preparation"
 
 
+# How each goal reads in AI prompts. The stored values stay the same for existing accounts
+# ("learn_python" predates multi-course support and now means learning any new language).
+GOAL_DESCRIPTIONS: dict[str, str] = {
+    LearningGoal.LEARN_PYTHON: "learn a new programming language or framework",
+    LearningGoal.IMPROVE_PROBLEM_SOLVING: "improve problem solving",
+    LearningGoal.INTERVIEW_PREPARATION: "interview preparation",
+}
+
+
+def describe_goal(goal: str | None) -> str:
+    if not goal:
+        return "learn"
+    return GOAL_DESCRIPTIONS.get(goal, goal.replace("_", " "))
+
+
 class LearningMode(StrEnum):
     LEARN = "learn"
     PRACTICE = "practice"

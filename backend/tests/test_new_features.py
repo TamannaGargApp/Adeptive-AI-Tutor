@@ -168,7 +168,7 @@ async def test_admin_can_delete_a_course_after_previewing(auth_client, monkeypat
     me = (await auth_client.get("/api/auth/me")).json()
     assert me["subjects"] == ["python"]
     assert me["current_subject"] == "python"
-    assert [course["slug"] for course in (await auth_client.get("/api/subjects")).json()] == ["python"]
+    assert "javascript" not in [course["slug"] for course in (await auth_client.get("/api/subjects")).json()]
     assert await database.topics.count_documents({"subject": "javascript"}) == 0
 
     # Restarting the app must not bring a deleted built-in course back.

@@ -7,6 +7,7 @@ import { HeroCollage, Icon, type IconName, StudySetShowcase, TILE_TONES } from "
 import { LogoMark } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth";
+import { RUN_LANGUAGE_NAMES } from "@/lib/codeRunner";
 
 const PROBLEMS: { icon: IconName; title: string; text: string }[] = [
   { icon: "notes", title: "Notes pile up", text: "Pages of notes, but no time to turn them into something you can revise from." },
@@ -51,12 +52,12 @@ const FEATURES: Feature[] = [
     icon: "book",
     eyebrow: "Courses",
     title: "A tutor that teaches, not just answers",
-    text: "Python and JavaScript courses where every topic has four ways to learn, each adapting to your level.",
+    text: "Programming courses where every topic has four ways to learn, each adapting to your level.",
     chips: ["Read", "Learn", "Practice", "Quiz"],
     badge: { text: "▶ Run  ·  0 1 2", tone: "bg-code text-code-fg" },
     span: "sm:col-span-2 lg:col-span-4",
     glow: "--color-blue",
-    screenshot: { file: "learn-chat.png", alt: "The AI tutor explaining a Python concept with a runnable example", label: "Learn chat" },
+    screenshot: { file: "learn-chat.png", alt: "The AI tutor explaining a programming concept with a runnable example", label: "Learn chat" },
   },
   {
     icon: "calendar",
@@ -74,11 +75,11 @@ const FEATURES: Feature[] = [
     eyebrow: "Real coding",
     title: "Run code in your browser",
     text: "No setup. Run examples and get instant, explained feedback on every answer.",
-    chips: ["Python", "JavaScript", "Tested exercises"],
+    chips: [...Object.values(RUN_LANGUAGE_NAMES), "Tested exercises"],
     badge: { text: "✓ Correct", tone: "bg-good-tint text-good" },
     span: "lg:col-span-2",
     glow: "--color-cyan",
-    screenshot: { focus: "center top", file: "code-exercise.png", alt: "A practice question with a Python code editor and tests to run", label: "Practice" },
+    screenshot: { focus: "center top", file: "code-exercise.png", alt: "A practice question with a code editor and tests to run", label: "Practice" },
   },
   {
     icon: "target",
@@ -108,14 +109,14 @@ const COMPARISON = [
   { old: "Re-reading pages of notes", now: "AI notes, summaries and flashcards from your own material" },
   { old: "Copying answers from tutorials", now: "Hints that guide you to the answer yourself" },
   { old: "Guessing what to study next", now: "A day-by-day plan that adapts to your progress" },
-  { old: "Installing tools before you can code", now: "Run Python and JavaScript right in the browser" },
+  { old: "Installing tools before you can code", now: "Write and run code right in the browser" },
   { old: "Finding gaps on exam day", now: "Quizzes and tests that show weak areas early" },
 ];
 
 const HIGHLIGHTS = [
   { value: "24/7", label: "an AI tutor ready when you are" },
   { value: "4", label: "ways to learn every topic" },
-  { value: "2", label: "languages that run in your browser" },
+  { value: `${Object.keys(RUN_LANGUAGE_NAMES).length}`, label: "languages that run in your browser" },
   { value: "0", label: "setup or installs needed" },
 ];
 
@@ -130,7 +131,7 @@ const FAQS = [
   {
     question: "What can I learn here?",
     answer:
-      "Python and JavaScript, from the very basics, through structured courses. With study sets you can also study any subject from your own notes.",
+      "Programming, from the very basics, through structured courses, with new courses added over time. With study sets you can also study any subject from your own notes.",
   },
   {
     question: "Do I need to install anything?",
@@ -213,7 +214,7 @@ export default function LandingPage() {
                 Learn smarter with your own <span className="text-gradient">AI tutor</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg text-ink-soft sm:text-xl">
-                Learn Python and JavaScript step by step, turn your notes into flashcards and quizzes, and follow a
+                Learn to code step by step, turn your notes into flashcards and quizzes, and follow a
                 study plan built around your goal.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">

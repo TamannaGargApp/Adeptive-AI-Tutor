@@ -31,6 +31,9 @@ export interface TestOutcome {
   passed: boolean;
 }
 
+/** Display names for the languages the browser can run (courses can use any of them). */
+export const RUN_LANGUAGE_NAMES: Record<RunLanguage, string> = { python: "Python", javascript: "JavaScript" };
+
 export function isRunnable(language: string | undefined): language is RunLanguage {
   return language === "python" || language === "javascript";
 }
@@ -56,9 +59,35 @@ async function run(pyodide, namespace, source) {
   }
 }
 
+// Packages pip-installed on first use (not bundled with Pyodide), keyed by import name.
+const PIP_PACKAGES = { flask: "flask" };
+const installed = new Set();
+
+async function loadPackages(pyodide, source) {
+  // Packages bundled with Pyodide (pandas, numpy, ...) are found from the imports.
+  await pyodide.loadPackagesFromImports(source);
+  for (const [name, pipName] of Object.entries(PIP_PACKAGES)) {
+    if (installed.has(name)) continue;
+    if (!new RegExp("^\\\\s*(from|import)\\\\s+" + name + "\\\\b", "m").test(source)) continue;
+    await pyodide.loadPackage("micropip");
+    await pyodide.pyimport("micropip").install(pipName);
+    installed.add(name);
+  }
+}
+
 self.onmessage = async (event) => {
   const { id, code, tests } = event.data;
   const pyodide = await ready;
+  // Download any libraries the code needs before the run timer starts.
+  try {
+    await loadPackages(pyodide, code + "\\n" + (tests || []).map((test) => test.input || "").join("\\n"));
+  } catch (error) {
+    const failed = { stdout: "", error: "Couldn't load a library this code needs. Check your connection and try again." };
+    self.postMessage({ type: "loaded", id });
+    self.postMessage({ type: "result", id, program: failed, outputs: (tests || []).map(() => failed) });
+    return;
+  }
+  self.postMessage({ type: "loaded", id });
   const namespace = pyodide.globals.get("dict")();
   const program = await run(pyodide, namespace, code);
   if (!tests) { self.postMessage({ type: "result", id, program }); return; }
@@ -99,6 +128,7 @@ function run(source, check) {
 self.postMessage({ type: "ready" });
 self.onmessage = (event) => {
   const { id, code, tests } = event.data;
+  self.postMessage({ type: "loaded", id });
   const program = run(code, null).program;
   if (!tests) { self.postMessage({ type: "result", id, program }); return; }
   const outputs = tests.map((test) => (test.input ? run(code, test.input).check : program));
@@ -156,15 +186,27 @@ async function execute(language: RunLanguage, code: string, tests: TestCase[] | 
   }
 
   const id = nextId++;
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      // Probably an infinite loop: kill the worker; a fresh one is made next time.
+  return new Promise((resolve, reject) => {
+    // First the worker downloads any libraries the code imports (pandas, flask, ...), which
+    // can take a while the first time. Only once that's done does the run timer start.
+    let timer = setTimeout(() => {
       state.worker.removeEventListener("message", onMessage);
       resetWorker(language);
-      resolve(null);
-    }, RUN_TIMEOUT_MS);
+      reject(new Error("Loading the libraries this code needs took too long. Check your connection."));
+    }, LOAD_TIMEOUT_MS);
     const onMessage = (event: MessageEvent) => {
-      if (event.data?.type !== "result" || event.data.id !== id) return;
+      if (event.data?.id !== id) return;
+      if (event.data.type === "loaded") {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          // Probably an infinite loop: kill the worker; a fresh one is made next time.
+          state.worker.removeEventListener("message", onMessage);
+          resetWorker(language);
+          resolve(null);
+        }, RUN_TIMEOUT_MS);
+        return;
+      }
+      if (event.data.type !== "result") return;
       clearTimeout(timer);
       state.worker.removeEventListener("message", onMessage);
       resolve(event.data as WorkerReply);

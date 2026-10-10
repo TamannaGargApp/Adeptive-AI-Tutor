@@ -38,7 +38,7 @@ async def _generate_and_save(topic: Topic, ai: StructuredLLM) -> dict:
     # Admin-uploaded course notes, if any, are the basis; the AI fills in what they lack.
     notes = await notes_service.get_full_notes(topic.slug)
     material = await ai.generate_structured(
-        system_prompt=subject_rules(subject.name),
+        system_prompt=subject_rules(subject.name, subject.code_guidelines),
         user_prompt=build_material_prompt(
             subject.name,
             subject.language,

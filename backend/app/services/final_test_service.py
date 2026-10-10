@@ -15,7 +15,7 @@ from bson import ObjectId
 
 from app.core.exceptions import AIServiceError, ConflictError, NotFoundError
 from app.db.mongodb import get_database, to_object_id
-from app.models.enums import LearningMode, Level
+from app.models.enums import LearningMode, Level, describe_goal
 from app.models.final_test import ConceptScore, FinalTest, FinalTestResult, QuestionReview, TopicScore
 from app.models.question import Question
 from app.models.user import User
@@ -118,7 +118,7 @@ async def start_course_exam(user: User, subject_slug: str, ai: StructuredLLM) ->
 
     generated = await ai.generate_structured(
         system_prompt=build_course_exam_system_prompt(
-            subject.name, user.name, user.level or "beginner", (user.goal or "learn").replace("_", " ")
+            subject.name, user.name, user.level or "beginner", describe_goal(user.goal), subject.code_guidelines
         ),
         user_prompt=build_course_exam_prompt(
             [(topic.slug, topic.name, topic.key_concepts) for topic in topics], COURSE_EXAM_QUESTIONS_PER_TOPIC
@@ -165,6 +165,8 @@ async def _create_test(
     # The id is created first because each question stores it as its session_id.
     test_id = ObjectId()
     question_ids: list[str] = []
+    # Questions store the course's code language, so code shows and runs in the right language.
+    language = (await subject_service.get_subject(subject_slug)).language
     for question_topic, items in questions_by_topic:
         saved = await question_service.save_questions(
             user_id=user.id,
@@ -173,6 +175,7 @@ async def _create_test(
             mode=LearningMode.FINAL_TEST,
             difficulty=difficulty,
             generated=items,
+            language=language,
         )
         question_ids.extend(question.id for question in saved)
 

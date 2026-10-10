@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 from app.core.exceptions import AppError
 from app.db.mongodb import get_database, to_object_id
+from app.models.enums import describe_goal
 from app.models.user import User
 from app.prompts.tutor_prompt import build_feedback_prompt, subject_rules
 from app.schemas.feedback import FeedbackReportOut, FeedbackResponse
@@ -43,9 +44,9 @@ async def generate_report(user: User, subject_slug: str, ai: StructuredLLM) -> F
     subject = await subject_service.get_subject(subject_slug)
     evidence = await _build_evidence(user, subject_slug)
     report = await ai.generate_structured(
-        system_prompt=subject_rules(subject.name),
+        system_prompt=subject_rules(subject.name, subject.code_guidelines),
         user_prompt=build_feedback_prompt(
-            subject.name, user.name, user.level or "beginner", (user.goal or "learn").replace("_", " "), evidence
+            subject.name, user.name, user.level or "beginner", describe_goal(user.goal), evidence
         ),
         response_model=FeedbackResponse,
     )

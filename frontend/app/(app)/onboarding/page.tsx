@@ -7,6 +7,7 @@ import { Icon, type IconName } from "@/components/Icon";
 import { Alert, CompletionBar } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { courseIcon } from "@/lib/courses";
 import { GOAL_LABELS, LEVEL_LABELS, LEVELS } from "@/lib/labels";
 import type { LearningGoal, Level, Subject } from "@/lib/types";
 
@@ -336,9 +337,7 @@ export default function OnboardingPage() {
                 options={subjects.map((item) => item.slug)}
                 labels={Object.fromEntries(subjects.map((item) => [item.slug, item.name]))}
                 hints={Object.fromEntries(subjects.map((item) => [item.slug, item.description]))}
-                icons={Object.fromEntries(
-                  subjects.map((item) => [item.slug, item.slug.includes("javascript") ? "bolt" : "code"]),
-                ) as Record<string, IconName>}
+                icons={Object.fromEntries(subjects.map((item) => [item.slug, courseIcon(`${item.slug} ${item.name}`)]))}
                 columns={subjects.length === 2 ? 2 : 3}
                 value={subject}
                 onChange={setSubject}

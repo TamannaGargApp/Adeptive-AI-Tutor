@@ -6,7 +6,7 @@ from app.models.enums import LearningMode, QuestionType
 from app.models.question import Question
 from app.models.session import ChatMessage
 
-# "{subject}" is replaced with the course name, e.g. "Python" or "JavaScript".
+# "{subject}" is replaced with the course name, e.g. "Python" or "Web Development with Flask".
 TUTOR_SYSTEM_PROMPT = """\
 You are a patient, encouraging {subject} tutor inside the Adaptive AI Tutor app.
 You teach beginners and early-intermediate learners.
@@ -43,14 +43,16 @@ class LearnerContext:
     strengths: list[str]
     weaknesses: list[str]
     recent_results: list[bool]
-    subject_name: str = "Python"
+    subject_name: str
     # Code-fence language, e.g. "python" or "javascript".
-    language: str = "python"
+    language: str
+    # The course's own instructions for writing code, if any (see Subject.code_guidelines).
+    code_guidelines: str = ""
 
 
 def build_system_prompt(context: LearnerContext) -> str:
     recent = " ".join("correct" if result else "wrong" for result in context.recent_results) or "none yet"
-    return f"""{subject_rules(context.subject_name)}
+    return f"""{subject_rules(context.subject_name, context.code_guidelines)}
 Learner context:
 - Name: {context.student_name}
 - Level: {context.level}
@@ -68,8 +70,12 @@ Learner context:
 """
 
 
-def subject_rules(subject_name: str) -> str:
-    return TUTOR_SYSTEM_PROMPT.replace("{subject}", subject_name)
+def subject_rules(subject_name: str, code_guidelines: str = "") -> str:
+    """The tutor's rules for a course, plus the course's own instructions for writing code."""
+    rules = TUTOR_SYSTEM_PROMPT.replace("{subject}", subject_name)
+    if code_guidelines.strip():
+        rules += f"\nHow to write code for this course (follow this in every example, question and exercise):\n{code_guidelines.strip()}\n"
+    return rules
 
 
 def notes_section(notes: str | None, purpose: str = "answers") -> str:
@@ -154,7 +160,7 @@ Fields:
 QUESTION_TYPES_GUIDE = """\
 Question types:
 - "predict_output": show a short code snippet in `code` and ask what it outputs
-  (what print() shows in Python, or console.log() in JavaScript).
+  (what the program prints, e.g. with print() or console.log()).
   `correct_answer` must be the exact printed output (use a newline between printed lines).
 - "multiple_choice": 3 or 4 `options`; `correct_answer` must be the exact text of the correct option.
 - "short_answer": a conceptual question answered in a sentence or a single expression.
@@ -226,8 +232,10 @@ at the end of the exam.
 {QUESTION_TYPES_GUIDE}"""
 
 
-def build_course_exam_system_prompt(subject_name: str, student_name: str, level: str, goal: str) -> str:
-    return f"""{subject_rules(subject_name)}
+def build_course_exam_system_prompt(
+    subject_name: str, student_name: str, level: str, goal: str, code_guidelines: str = ""
+) -> str:
+    return f"""{subject_rules(subject_name, code_guidelines)}
 Learner context:
 - Name: {student_name}
 - Level: {level}

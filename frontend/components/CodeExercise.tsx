@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { isRunnable, runTests, type TestOutcome } from "@/lib/codeRunner";
+import { isRunnable, RUN_LANGUAGE_NAMES, runTests, type TestOutcome } from "@/lib/codeRunner";
 import type { Question, TestRunResult } from "@/lib/types";
 
 import CodeEditor from "./CodeEditor";
@@ -51,7 +51,7 @@ export default function CodeExercise({ question, code, onCodeChange, onSubmit, s
     <div className="space-y-4">
       <CodeEditor
         id={`code-${question.id}`}
-        label={`Your ${language === "python" ? "Python" : "JavaScript"} code`}
+        label={`Your ${RUN_LANGUAGE_NAMES[language]} code`}
         value={code}
         onChange={onCodeChange}
         disabled={locked || submitting}
@@ -97,7 +97,7 @@ export default function CodeExercise({ question, code, onCodeChange, onSubmit, s
         </div>
       )}
       <p className="text-xs text-ink-soft">
-        Code runs in your browser{language === "python" ? " (Python loads the first time, which can take a few seconds)" : ""}.
+        Code runs in your browser. The first run can take a few seconds while the language and any libraries it uses load.
       </p>
     </div>
   );

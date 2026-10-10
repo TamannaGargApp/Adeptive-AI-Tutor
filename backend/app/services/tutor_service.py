@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from app.models.enums import LearningMode, Level
+from app.models.enums import LearningMode, Level, describe_goal
 from app.models.question import Question
 from app.models.session import ChatMessage, LearningSession
 from app.models.user import User
@@ -40,7 +40,7 @@ async def build_learner_context(
     return LearnerContext(
         student_name=user.name,
         level=(user.level or "beginner"),
-        goal=(user.goal or "learn_python").replace("_", " "),
+        goal=describe_goal(user.goal),
         topic_name=topic.name,
         topic_description=topic.description,
         key_concepts=topic.key_concepts,
@@ -54,6 +54,7 @@ async def build_learner_context(
         recent_results=progress.recent_results if progress else [],
         subject_name=subject.name,
         language=subject.language,
+        code_guidelines=subject.code_guidelines,
     )
 
 

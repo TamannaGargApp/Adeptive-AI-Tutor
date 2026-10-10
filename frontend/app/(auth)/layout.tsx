@@ -6,7 +6,7 @@ import { LogoMark } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const POINTS = [
-  "Courses in Python and JavaScript, step by step",
+  "Programming courses, step by step",
   "A tutor that gives hints, not just answers",
   "Study plans, flashcards and quizzes from your notes",
 ];
