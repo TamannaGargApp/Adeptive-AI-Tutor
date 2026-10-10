@@ -80,7 +80,7 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
       <PageHeader
         icon="book"
         title="My courses"

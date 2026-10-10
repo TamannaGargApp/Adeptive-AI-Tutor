@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import type { Badge, Gamification, Streak, XpLevel } from "@/lib/types";
 
+import { Icon } from "./Icon";
+
 const DAY_FORMAT: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
 const EARNED_FORMAT: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
 
@@ -17,11 +19,26 @@ export function streakMessage(streak: Streak): string {
   return "You've learned today. Come back tomorrow to keep it going.";
 }
 
+/** A friendly title for each stage, shown next to the level number. */
+const LEVEL_TITLES: [number, string][] = [
+  [20, "Master"],
+  [15, "Expert"],
+  [11, "Builder"],
+  [8, "Coder"],
+  [5, "Problem solver"],
+  [3, "Explorer"],
+  [1, "Beginner"],
+];
+
+export function levelTitle(level: number): string {
+  return LEVEL_TITLES.find(([from]) => level >= from)?.[1] ?? "Beginner";
+}
+
 export function StreakCalendar({ streak }: { streak: Streak }) {
   const lastIndex = streak.recent_days.length - 1;
   return (
     <div>
-      <ol className="grid grid-cols-10 gap-1.5" aria-label="Learning activity over the last 30 days">
+      <ol className="grid grid-cols-10 gap-1.5 sm:grid-cols-15" aria-label="Learning activity over the last 30 days">
         {streak.recent_days.map((day, index) => {
           const label = `${parseDay(day.date).toLocaleDateString(undefined, DAY_FORMAT)}: ${day.active ? "active" : "no activity"}`;
           return (
@@ -29,8 +46,8 @@ export function StreakCalendar({ streak }: { streak: Streak }) {
               key={day.date}
               title={label}
               aria-label={label}
-              className={`aspect-square rounded-md ${day.active ? "bg-good" : "bg-paper"} ${
-                index === lastIndex ? "ring-2 ring-blue ring-offset-1 ring-offset-surface" : ""
+              className={`aspect-square rounded-md ${day.active ? "streak-on" : "bg-line/60"} ${
+                index === lastIndex ? "ring-2 ring-[#f97316] ring-offset-2 ring-offset-surface" : ""
               }`}
             />
           );
@@ -48,71 +65,126 @@ export function LevelProgress({ level }: { level: XpLevel }) {
   const percent = Math.round((level.xp_into_level / level.xp_for_next_level) * 100);
   return (
     <div className="space-y-1.5">
-      <p className="flex items-baseline justify-between gap-2">
-        <span className="text-2xl font-bold">Level {level.level}</span>
-        <span className="text-sm text-ink-soft">{level.total_xp.toLocaleString()} XP total</span>
-      </p>
       <div
-        className="h-2.5 overflow-hidden rounded-full bg-paper"
+        className="h-2.5 overflow-hidden rounded-full bg-line/70"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={level.xp_for_next_level}
         aria-valuenow={level.xp_into_level}
         aria-label={`Progress to level ${level.level + 1}`}
       >
-        <div className="h-full rounded-full bg-sun" style={{ width: `${Math.max(percent, 2)}%` }} />
+        <div className="level-fill h-full rounded-full" style={{ width: `${Math.max(percent, 2)}%` }} />
       </div>
-      <p className="text-xs text-ink-soft">
-        {level.xp_for_next_level - level.xp_into_level} XP to level {level.level + 1}
+      <p className="flex justify-between gap-2 text-xs text-ink-soft">
+        <span>
+          {level.xp_into_level} / {level.xp_for_next_level} XP
+        </span>
+        <span>{level.xp_for_next_level - level.xp_into_level} XP to level {level.level + 1}</span>
       </p>
     </div>
   );
 }
 
+/** A badge as a medal: earned ones glow in the logo gradient, locked ones show how close they are. */
+/** Colour pairs for medals and rings, so every badge has its own colour. */
+export const MEDAL_COLORS: [string, string][] = [
+  ["#f97316", "#ec4899"],
+  ["#0ea5e9", "#6366f1"],
+  ["#10b981", "#14b8a6"],
+  ["#8b5cf6", "#d946ef"],
+  ["#f59e0b", "#f97316"],
+  ["#ec4899", "#f43f5e"],
+  ["#22d3ee", "#10b981"],
+];
+
+/** A badge's colour, always the same for the same badge. */
+export function medalColors(id: string): [string, string] {
+  let hash = 0;
+  for (const character of id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return MEDAL_COLORS[hash % MEDAL_COLORS.length];
+}
+
 export function BadgeCard({ badge }: { badge: Badge }) {
   const percent = Math.round((badge.progress / badge.target) * 100);
+  const [from, to] = medalColors(badge.id);
   return (
     <li
-      className={`flex gap-3 rounded-xl border p-4 ${badge.earned ? "border-sun bg-sun-tint" : "border-line bg-surface"}`}
+      className={`panel card-lift relative flex flex-col items-center overflow-hidden p-5 text-center ${
+        badge.earned ? "" : "bg-paper/60 shadow-none"
+      }`}
     >
-      <span className={`text-3xl ${badge.earned ? "" : "opacity-40 grayscale"}`} aria-hidden>
-        {badge.icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-bold">
-          {badge.name}
-          <span className="sr-only">{badge.earned ? " (earned)" : " (locked)"}</span>
-        </p>
-        <p className="text-sm text-ink-soft">{badge.description}</p>
-        {badge.earned && badge.earned_at ? (
-          <p className="mt-1 text-xs font-bold text-ink-soft">
-            Earned {new Date(badge.earned_at).toLocaleDateString(undefined, EARNED_FORMAT)}
-          </p>
-        ) : (
-          <div className="mt-2 flex items-center gap-2">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper" aria-hidden>
-              <div className="h-full rounded-full bg-blue" style={{ width: `${percent}%` }} />
-            </div>
-            <span className="font-mono text-xs text-ink-soft">
-              {badge.progress}/{badge.target}
-            </span>
-          </div>
+      {/* A soft glow of the badge's colour behind earned medals. */}
+      {badge.earned && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-16 left-1/2 h-32 w-32 -translate-x-1/2 rounded-full opacity-25"
+          style={{ background: `radial-gradient(closest-side, ${from}, transparent)` }}
+        />
+      )}
+      <span className="relative">
+        <span
+          aria-hidden
+          className={`grid h-16 w-16 place-items-center rounded-full text-3xl ${
+            badge.earned ? "" : "border-2 border-dashed border-line bg-surface opacity-70 grayscale"
+          }`}
+          style={
+            badge.earned
+              ? { background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 10px 24px -10px ${from}` }
+              : undefined
+          }
+        >
+          <span className={badge.earned ? "grid h-[52px] w-[52px] place-items-center rounded-full bg-surface" : ""}>
+            {badge.icon}
+          </span>
+        </span>
+        {!badge.earned && (
+          <span
+            aria-hidden
+            className="absolute -right-1 -bottom-1 grid h-6 w-6 place-items-center rounded-full border border-line bg-surface text-ink-soft"
+          >
+            <Icon name="lock" size={12} />
+          </span>
         )}
-      </div>
+      </span>
+      <p className="mt-3 font-bold">
+        {badge.name}
+        <span className="sr-only">{badge.earned ? " (earned)" : " (locked)"}</span>
+      </p>
+      <p className="mt-0.5 text-sm text-ink-soft">{badge.description}</p>
+      {badge.earned && badge.earned_at ? (
+        <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-good-tint px-2.5 py-0.5 text-xs font-bold text-good">
+          <Icon name="check" size={12} /> {new Date(badge.earned_at).toLocaleDateString(undefined, EARNED_FORMAT)}
+        </p>
+      ) : (
+        <div className="mt-3 flex w-full items-center gap-2">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line/70" aria-hidden>
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${Math.max(percent, percent > 0 ? 4 : 0)}%`, background: `linear-gradient(90deg, ${from}, ${to})` }}
+            />
+          </div>
+          <span className="text-xs font-bold text-ink-soft">
+            {badge.progress}/{badge.target}
+          </span>
+        </div>
+      )}
     </li>
   );
 }
 
-export function BadgeGrid({ badges }: { badges: Badge[] }) {
-  // Earned badges first (newest first), then locked ones closest to unlocking.
-  const sorted = [...badges].sort((a, b) => {
+/** Earned badges first (newest first), then locked ones closest to unlocking. */
+export function sortBadges(badges: Badge[]): Badge[] {
+  return [...badges].sort((a, b) => {
     if (a.earned !== b.earned) return a.earned ? -1 : 1;
     if (a.earned) return (b.earned_at ?? "").localeCompare(a.earned_at ?? "");
     return b.progress / b.target - a.progress / a.target;
   });
+}
+
+export function BadgeGrid({ badges }: { badges: Badge[] }) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {sorted.map((badge) => (
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {sortBadges(badges).map((badge) => (
         <BadgeCard key={badge.id} badge={badge} />
       ))}
     </ul>

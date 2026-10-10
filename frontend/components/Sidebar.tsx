@@ -6,6 +6,14 @@ import type { Level, StudyMode, Topic } from "@/lib/types";
 import { Icon, type IconName } from "./Icon";
 import { Segmented } from "./ui";
 
+/** Each study mode has its own colour: Read sky, Learn indigo, Practice orange, Quiz pink. */
+export const MODE_TILES: Record<StudyMode, string> = {
+  read: "tile-cyan",
+  learn: "tile-blue",
+  practice: "tile-amber",
+  quiz: "tile-magenta",
+};
+
 export const MODE_ICONS: Record<StudyMode, IconName> = { read: "book", learn: "chat", practice: "target", quiz: "quiz" };
 
 interface SidebarProps {
@@ -33,7 +41,7 @@ export default function Sidebar({
   return (
     <aside
       id="tutor-settings"
-      className={`space-y-7 border-b border-line bg-surface p-4 lg:block lg:max-h-none lg:w-72 lg:shrink-0 lg:overflow-y-auto lg:border-r lg:border-b-0 ${
+      className={`space-y-7 border-b border-line bg-surface/75 p-4 lg:block lg:max-h-none lg:w-80 lg:shrink-0 lg:overflow-y-auto lg:border-r lg:border-b-0 ${
         mobileOpen ? "max-h-[45dvh] shrink-0 overflow-y-auto" : "hidden"
       }`}
     >
@@ -100,8 +108,8 @@ export default function Sidebar({
               >
                 <span
                   aria-hidden
-                  className={`hidden h-9 w-9 shrink-0 place-items-center rounded-lg lg:grid ${
-                    selected ? "bg-brand" : "bg-paper text-ink-soft"
+                  className={`hidden h-9 w-9 shrink-0 place-items-center rounded-lg transition-opacity lg:grid ${MODE_TILES[item]} ${
+                    selected ? "" : "opacity-75"
                   }`}
                 >
                   <Icon name={MODE_ICONS[item]} size={18} />

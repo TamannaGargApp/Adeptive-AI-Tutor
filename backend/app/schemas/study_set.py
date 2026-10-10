@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field, model_validator
 
 StudyTool = Literal["notes", "summary", "flashcards", "quiz"]
 STUDY_TOOLS: tuple[str, ...] = ("notes", "summary", "flashcards", "quiz")
-MAX_FILE_BYTES = 10 * 1024 * 1024
+# All the files in one study set together can be up to 2 GB.
+MAX_STUDY_SET_BYTES = 2 * 1024 * 1024 * 1024
+MAX_MATERIALS = 20
+# Text read from each file (in the browser). Longer files use their beginning.
 MAX_TEXT_CHARS = 120_000
 
 
@@ -63,14 +66,41 @@ class StudyChatResponse(BaseModel):
 # ---------- API ----------
 
 
-class StudySetCreate(BaseModel):
-    """A file read in the browser: its extracted text, plus the original file (base64) for storage."""
+class MaterialIn(BaseModel):
+    """A file read in the browser: its extracted text, and the size of the original, which is
+    uploaded separately (see UploadTarget) so large files never pass through JSON."""
 
-    title: str = Field(min_length=1, max_length=120)
     file_name: str = Field(min_length=1, max_length=200)
     content_type: str = Field(max_length=100)
+    file_size: int = Field(ge=1, le=MAX_STUDY_SET_BYTES)
     text: str = Field(min_length=50, max_length=MAX_TEXT_CHARS)
-    file_base64: str | None = Field(default=None, max_length=MAX_FILE_BYTES * 4 // 3 + 4)
+
+
+class StudySetCreate(MaterialIn):
+    title: str = Field(min_length=1, max_length=120)
+
+
+class UploadTarget(BaseModel):
+    """Where the browser sends the original file with a PUT request.
+
+    direct=True: a presigned AWS S3 link (send exactly these headers, no cookies), then call
+    .../complete. direct=False: a path on this API (send it with the login cookie)."""
+
+    material_id: str
+    url: str
+    method: Literal["PUT"] = "PUT"
+    headers: dict[str, str]
+    direct: bool
+
+
+class MaterialOut(BaseModel):
+    id: str
+    file_name: str
+    content_type: str
+    size: int
+    text_chars: int
+    added_at: datetime
+    has_file: bool
 
 
 class Flashcard(FlashcardItem):
@@ -92,6 +122,7 @@ class StudySetSummary(BaseModel):
     id: str
     title: str
     file_name: str
+    material_count: int
     created_at: datetime
     tools_ready: list[str]
     flashcards_known: int
@@ -101,12 +132,27 @@ class StudySetSummary(BaseModel):
 
 class StudySetOut(StudySetSummary):
     has_file: bool
+    materials: list[MaterialOut]
+    storage_used: int
+    storage_limit: int
+    # Tools made before files were added or removed; they can be regenerated to match.
+    stale_tools: list[str]
     notes: StudyNotesResponse | None
     summary: StudySummaryResponse | None
     flashcards: list[Flashcard] | None
     known_card_ids: list[str]
     quiz: StudyQuizResponse | None
     chat: list[StudySetChatMessage]
+
+
+class StudySetCreated(BaseModel):
+    study_set: StudySetSummary
+    upload: UploadTarget
+
+
+class MaterialAdded(BaseModel):
+    study_set: StudySetOut
+    upload: UploadTarget
 
 
 class MoreFlashcards(BaseModel):

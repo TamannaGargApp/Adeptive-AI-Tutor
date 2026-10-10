@@ -39,7 +39,7 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+    <header className="sticky top-0 z-40 bg-surface">
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3">
         <Link href="/dashboard" className="flex shrink-0 items-center text-ink">
           <LogoMark height={48} />
@@ -66,6 +66,8 @@ export default function Navbar() {
           <ProfileMenu mainLinks={onboarded ? MAIN_LINKS : []} />
         </div>
       </div>
+      {/* A thin line in the logo's colours under the header. */}
+      <div aria-hidden className="bar-glow h-0.5 opacity-80" />
     </header>
   );
 }

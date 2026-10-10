@@ -23,7 +23,7 @@ function recommendationAction(recommendation: Recommendation): { href: string; l
 export default function RecommendationCard({ recommendation }: { recommendation: Recommendation }) {
   const action = recommendationAction(recommendation);
   return (
-    <section className="bg-brand relative overflow-hidden rounded-2xl p-6" aria-labelledby="recommendation-heading">
+    <section className="bg-sunset relative overflow-hidden rounded-2xl p-6 shadow-[0_18px_40px_-18px_rgb(236_72_153/0.6)]" aria-labelledby="recommendation-heading">
       <div
         aria-hidden
         className="absolute inset-0 opacity-25 [background-image:radial-gradient(rgb(255_255_255/0.6)_1px,transparent_1px)] [background-size:20px_20px]"

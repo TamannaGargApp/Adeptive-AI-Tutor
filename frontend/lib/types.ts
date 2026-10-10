@@ -567,6 +567,7 @@ export interface StudySetSummary {
   id: string;
   title: string;
   file_name: string;
+  material_count: number;
   created_at: string;
   tools_ready: StudyTool[];
   flashcards_known: number;
@@ -574,8 +575,41 @@ export interface StudySetSummary {
   last_quiz: { score: number; total: number } | null;
 }
 
+/** One file in a study set. has_file is false until the original has finished uploading. */
+export interface StudyMaterial {
+  id: string;
+  file_name: string;
+  content_type: string;
+  size: number;
+  text_chars: number;
+  added_at: string;
+  has_file: boolean;
+}
+
+/** A file's text, read in the browser, sent before the original is uploaded. */
+export interface MaterialInput {
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  text: string;
+}
+
+/** Where to PUT the original: a presigned S3 link (direct) or a path on the API. */
+export interface UploadTarget {
+  material_id: string;
+  url: string;
+  method: "PUT";
+  headers: Record<string, string>;
+  direct: boolean;
+}
+
 export interface StudySet extends StudySetSummary {
   has_file: boolean;
+  materials: StudyMaterial[];
+  storage_used: number;
+  storage_limit: number;
+  /** Tools made before files were added or removed. */
+  stale_tools: StudyTool[];
   notes: { content: string } | null;
   summary: { overview: string; key_points: string[]; key_terms: { term: string; definition: string }[] } | null;
   flashcards: Flashcard[] | null;

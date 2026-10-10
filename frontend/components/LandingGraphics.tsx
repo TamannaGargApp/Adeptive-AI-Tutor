@@ -14,12 +14,8 @@ export { Icon, type IconName };
  */
 
 /** Tint classes for icon tiles, cycling through the logo's colours. */
-export const TILE_TONES = [
-  "bg-blue-tint text-blue",
-  "bg-violet-tint text-violet",
-  "bg-cyan-tint text-cyan",
-  "bg-violet-tint text-magenta",
-];
+/** Vivid icon tiles, the same as inside the app (see .tile-* in globals.css). */
+export const TILE_TONES = ["tile-blue", "tile-amber", "tile-cyan", "tile-magenta", "tile-green", "tile-violet"];
 
 /* ---------- Study set showcase: one interactive preview, switched by tabs ---------- */
 

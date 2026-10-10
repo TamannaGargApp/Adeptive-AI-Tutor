@@ -28,8 +28,10 @@ import type {
   PlanSettings,
   PlanStrategy,
   StudyPlan,
+  MaterialInput,
   StudySet,
   StudySetSummary,
+  UploadTarget,
   StudyTool,
   Subject,
   TestRunResult,
@@ -117,6 +119,50 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   // 204 No Content (e.g. after a delete) has no body to parse.
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/**
+ * PUT a file with upload progress. fetch() can't report upload progress, so this uses
+ * XMLHttpRequest. withCredentials sends the login cookie (API uploads), but must be off for
+ * presigned S3 links, which carry their own signature.
+ */
+function putFile<T>(
+  url: string,
+  headers: Record<string, string>,
+  file: File,
+  withCredentials: boolean,
+  onProgress?: (fraction: number) => void,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.withCredentials = withCredentials;
+    for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(1);
+        try {
+          resolve((xhr.responseText ? JSON.parse(xhr.responseText) : undefined) as T);
+        } catch {
+          resolve(undefined as T); // S3 answers with an empty or XML body
+        }
+        return;
+      }
+      let message = `The upload failed (${xhr.status}). Please try again.`;
+      try {
+        const detail = JSON.parse(xhr.responseText)?.detail;
+        if (typeof detail === "string") message = detail;
+      } catch {
+        // Not JSON (e.g. an S3 XML error): keep the generic message.
+      }
+      reject(new ApiError(message, xhr.status));
+    };
+    xhr.onerror = () => reject(new ApiError("The upload was interrupted. Check your connection and try again.", 0));
+    xhr.send(file);
+  });
 }
 
 /** Fired after the study plan changes, so the header's plan chip can refresh straight away. */
@@ -287,8 +333,29 @@ export const api = {
 
   studySets: {
     list: () => request<StudySetSummary[]>("/api/study-sets"),
-    create: (data: { title: string; file_name: string; content_type: string; text: string; file_base64: string | null }) =>
-      request<StudySetSummary>("/api/study-sets", { method: "POST", body: data, timeoutMs: AI_TIMEOUT_MS }),
+    /** Saves the file's text; the original is uploaded afterwards with uploadOriginal. */
+    create: (data: MaterialInput & { title: string }) =>
+      request<{ study_set: StudySetSummary; upload: UploadTarget }>("/api/study-sets", {
+        method: "POST",
+        body: data,
+        timeoutMs: AI_TIMEOUT_MS,
+      }),
+    addMaterial: (id: string, data: MaterialInput) =>
+      request<{ study_set: StudySet; upload: UploadTarget }>(`/api/study-sets/${id}/materials`, {
+        method: "POST",
+        body: data,
+        timeoutMs: AI_TIMEOUT_MS,
+      }),
+    removeMaterial: (id: string, materialId: string) =>
+      request<StudySet>(`/api/study-sets/${id}/materials/${materialId}`, { method: "DELETE" }),
+    /** Upload an original file (up to 2 GB), reporting progress from 0 to 1. */
+    uploadOriginal: async (id: string, target: UploadTarget, file: File, onProgress?: (fraction: number) => void) => {
+      if (!target.direct) {
+        return putFile<StudySet>(`${API_URL}${target.url}`, target.headers, file, true, onProgress);
+      }
+      await putFile<void>(target.url, target.headers, file, false, onProgress);
+      return request<StudySet>(`/api/study-sets/${id}/materials/${target.material_id}/complete`, { method: "POST" });
+    },
     get: (id: string) => request<StudySet>(`/api/study-sets/${id}`),
     remove: (id: string) => request<void>(`/api/study-sets/${id}`, { method: "DELETE" }),
     generate: (id: string, tool: StudyTool, regenerate = false) =>
@@ -316,7 +383,8 @@ export const api = {
         timeoutMs: AI_TIMEOUT_MS,
       }),
     /** Opens in a new tab; the browser sends the login cookie. */
-    downloadUrl: (id: string) => `${API_URL}/api/study-sets/${id}/download`,
+    downloadUrl: (id: string, materialId?: string) =>
+      `${API_URL}/api/study-sets/${id}/download${materialId ? `?material_id=${encodeURIComponent(materialId)}` : ""}`,
   },
 
   getProgress: (subjectSlug?: string) => request<OverallProgress>(`/api/progress${subjectQuery(subjectSlug)}`),

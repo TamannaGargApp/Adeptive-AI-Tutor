@@ -35,7 +35,7 @@ export default function TopicsPage() {
     Object.values(progressBySlug).filter(test).length;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl px-4 py-8">
       <PageHeader
         icon="layers"
         eyebrow={subjectName ? `${subjectName} course` : undefined}
@@ -63,7 +63,7 @@ export default function TopicsPage() {
         {error && <Alert>{error}</Alert>}
         {!topics && !error && <Spinner />}
         {topics && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {topics.map((topic) => (
               <TopicCard
                 key={topic.slug}

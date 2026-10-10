@@ -311,7 +311,7 @@ export default function ChatWindow({ session }: { session: LearningSession }) {
             <div key={`${message.created_at}-${index}`} className={message.role === "student" ? "flex justify-end" : ""}>
               {message.role === "student" ? (
                 <div className="flex max-w-[85%] flex-col items-end gap-1">
-                  <p className="whitespace-pre-wrap rounded-2xl rounded-br-sm bg-blue px-4 py-2.5 text-on-accent">
+                  <p className="bg-brand whitespace-pre-wrap rounded-2xl rounded-br-sm px-4 py-2.5 shadow-[0_6px_16px_-10px_rgb(91_62_230/0.8)]">
                     {message.content}
                   </p>
                   {(message.attachments ?? []).map((name) => (
@@ -359,7 +359,7 @@ export default function ChatWindow({ session }: { session: LearningSession }) {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-line bg-surface">
+      <div className="shrink-0 border-t border-line bg-surface/80">
         <div className="mx-auto w-full max-w-4xl p-3 sm:p-4">
           {(voice.supported || canSpeak) && (
             <div className="mb-2 flex items-center justify-end gap-2">

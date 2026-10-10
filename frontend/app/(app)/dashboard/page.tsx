@@ -53,7 +53,7 @@ export default function DashboardPage() {
   const earnedBadges = gamification?.badges.filter((badge) => badge.earned) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
       <PageHeader
         icon="home"
         eyebrow={greeting}
@@ -75,7 +75,7 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="stat-strip grid grid-cols-2 gap-6 lg:grid-cols-4">
         <StatTile
           icon="flame"
           tone={4}

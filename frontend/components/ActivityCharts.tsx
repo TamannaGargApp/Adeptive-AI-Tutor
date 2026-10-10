@@ -90,10 +90,10 @@ function QuestionsChart({ days }: { days: ActivityDay[] }) {
         Questions per day
         <span className="flex gap-3 text-xs font-normal text-ink-soft">
           <span className="flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-violet" aria-hidden /> Correct
+            <span className="h-2.5 w-2.5 rounded-sm chart-correct" aria-hidden /> Correct
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-violet/30" aria-hidden /> Incorrect
+            <span className="h-2.5 w-2.5 rounded-sm chart-wrong" aria-hidden /> Incorrect
           </span>
         </span>
       </figcaption>
@@ -106,8 +106,8 @@ function QuestionsChart({ days }: { days: ActivityDay[] }) {
               className="flex h-full min-w-0 flex-1 flex-col justify-end"
               title={`${shortDate(day.date)}: ${day.questions} questions, ${day.correct} correct`}
             >
-              <div className="rounded-t-sm bg-violet/30" style={{ height: `${((day.questions - day.correct) / max) * 100}%` }} />
-              <div className="bg-violet" style={{ height: `${(day.correct / max) * 100}%` }} />
+              <div className="chart-wrong rounded-t-sm" style={{ height: `${((day.questions - day.correct) / max) * 100}%` }} />
+              <div className="chart-correct" style={{ height: `${(day.correct / max) * 100}%` }} />
             </div>
           ))}
         </div>
@@ -138,7 +138,7 @@ function AccuracyChart({ days }: { days: ActivityDay[] }) {
             <polyline
               points={points.map((point) => `${point.x},${point.y}`).join(" ")}
               fill="none"
-              className="stroke-violet"
+              className="stroke-[#6366f1]"
               strokeWidth="2"
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
@@ -150,7 +150,7 @@ function AccuracyChart({ days }: { days: ActivityDay[] }) {
           <span
             key={point.day.date}
             title={`${shortDate(point.day.date)}: ${point.day.accuracy}%`}
-            className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet"
+            className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ec4899] ring-2 ring-surface"
             style={{ left: `${(point.x / width) * 100}%`, top: `${(point.y / height) * 100}%` }}
           />
         ))}

@@ -49,7 +49,7 @@ export default function ProfileMenu({ mainLinks }: { mainLinks: NavItem[] }) {
 
   async function handleLogout() {
     await logout();
-    router.replace("/login");
+    router.replace("/");
   }
 
   const personalLinks: NavItem[] = user.onboarding_completed

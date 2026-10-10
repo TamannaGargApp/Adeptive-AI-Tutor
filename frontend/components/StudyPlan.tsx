@@ -29,6 +29,16 @@ export function isoDate(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** Task colours match the study modes: Read sky, Learn indigo, Practice orange, Quiz pink; tests violet. */
+const TASK_TILES: Record<PlanTask["type"], string> = {
+  read: "tile-cyan",
+  learn: "tile-blue",
+  practice: "tile-amber",
+  quiz: "tile-magenta",
+  final_test: "tile-violet",
+  course_exam: "tile-green",
+};
+
 const TASK_ICONS: Record<PlanTask["type"], IconName> = {
   read: "book",
   learn: "chat",
@@ -60,7 +70,9 @@ export function PlanTaskItem({ task, onToggle }: { task: PlanTask; onToggle?: (t
   return (
     <li
       className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
-        task.done ? "border-transparent bg-paper" : "border-line bg-surface hover:border-violet/40"
+        task.done
+          ? "border-transparent opacity-70"
+          : "border-line/70 hover:border-violet/40 hover:bg-[var(--row-hover)]"
       }`}
     >
       {onToggle && (
@@ -75,7 +87,7 @@ export function PlanTaskItem({ task, onToggle }: { task: PlanTask; onToggle?: (t
       )}
       <span
         aria-hidden
-        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${task.done ? "bg-good-tint text-good" : "bg-violet-tint text-violet"}`}
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${task.done ? "bg-good-tint text-good" : TASK_TILES[task.type]}`}
       >
         <Icon name={task.done ? "check" : TASK_ICONS[task.type]} size={17} />
       </span>
@@ -119,7 +131,7 @@ export function TodayPlanCard({
   return (
     <section className="panel p-5 sm:p-6" aria-labelledby="today-plan-heading">
       <div className="flex flex-wrap items-center gap-3">
-        <span aria-hidden className="icon-tile h-11 w-11 bg-sun-tint text-ink">
+        <span aria-hidden className="icon-tile tile-amber h-11 w-11">
           <Icon name="calendar" size={21} />
         </span>
         <div className="min-w-0 flex-1">
@@ -215,11 +227,19 @@ export function ScheduleControls({
     if (days.length) onChange({ ...settings, study_days: days });
   }
 
+  const weeklyMinutes = settings.study_days.length * settings.minutes_per_day;
+  const weekly =
+    weeklyMinutes < 60
+      ? `${weeklyMinutes} minutes`
+      : `${Number((weeklyMinutes / 60).toFixed(1))} hour${weeklyMinutes === 60 ? "" : "s"}`;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <fieldset disabled={disabled}>
-        <legend className="mb-2 font-bold">Days I can study</legend>
-        <div className="flex flex-wrap gap-2">
+        <legend className="mb-2 flex items-center gap-2 font-bold">
+          <Icon name="calendar" size={17} /> Days I can study
+        </legend>
+        <div className="grid grid-cols-7 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
           {WEEKDAY_LABELS.map((label, day) => {
             const selected = settings.study_days.includes(day);
             return (
@@ -228,8 +248,10 @@ export function ScheduleControls({
                 type="button"
                 onClick={() => toggleDay(day)}
                 aria-pressed={selected}
-                className={`h-10 w-14 rounded-lg border text-sm font-bold ${
-                  selected ? "border-blue bg-blue text-on-accent" : "border-line text-ink-soft hover:border-blue/50"
+                className={`h-11 rounded-xl text-sm font-bold transition-all sm:w-16 ${
+                  selected
+                    ? "bg-brand shadow-[0_6px_16px_-8px_rgb(91_62_230/0.7)]"
+                    : "border border-line bg-surface text-ink-soft hover:border-violet/50 hover:text-ink"
                 }`}
               >
                 {label}
@@ -239,52 +261,68 @@ export function ScheduleControls({
         </div>
       </fieldset>
 
-      <div className="flex flex-wrap gap-6">
-        <div className="space-y-1.5">
-          <label htmlFor="plan-minutes" className="block font-bold">
-            Time per study day
-          </label>
-          <select
-            id="plan-minutes"
-            className="input w-auto pr-8"
-            disabled={disabled}
-            value={settings.minutes_per_day}
-            onChange={(event) => onChange({ ...settings, minutes_per_day: Number(event.target.value) })}
-          >
-            {MINUTE_OPTIONS.map((minutes) => (
-              <option key={minutes} value={minutes}>
-                {minutes < 60 ? `${minutes} minutes` : `${minutes / 60} hour${minutes > 60 ? "s" : ""}`}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="plan-deadline" className="block font-bold">
-            Deadline <span className="font-normal text-ink-soft">(optional)</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="plan-deadline"
-              type="date"
-              className="input w-auto"
-              disabled={disabled}
-              min={isoDate(new Date())}
-              value={settings.target_date ?? ""}
-              onChange={(event) => onChange({ ...settings, target_date: event.target.value || null })}
-            />
-            {settings.target_date && (
+      <fieldset disabled={disabled}>
+        <legend className="mb-2 flex items-center gap-2 font-bold">
+          <Icon name="clock" size={17} /> Time per study day
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {MINUTE_OPTIONS.map((minutes) => {
+            const selected = settings.minutes_per_day === minutes;
+            return (
               <button
+                key={minutes}
                 type="button"
-                className="text-sm font-bold text-blue hover:text-blue-deep"
-                onClick={() => onChange({ ...settings, target_date: null })}
+                aria-pressed={selected}
+                onClick={() => onChange({ ...settings, minutes_per_day: minutes })}
+                className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                  selected
+                    ? "bg-brand"
+                    : "border border-line bg-surface text-ink-soft hover:border-violet/50 hover:text-ink"
+                }`}
               >
-                No deadline
+                {minutes < 60 ? `${minutes} min` : `${minutes / 60} hr${minutes > 60 ? "s" : ""}`}
               </button>
-            )}
-          </div>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <div className="space-y-2">
+        <label htmlFor="plan-deadline" className="flex items-center gap-2 font-bold">
+          <Icon name="target" size={17} /> Deadline <span className="font-normal text-ink-soft">(optional)</span>
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            id="plan-deadline"
+            type="date"
+            className="input w-auto"
+            disabled={disabled}
+            min={isoDate(new Date())}
+            value={settings.target_date ?? ""}
+            onChange={(event) => onChange({ ...settings, target_date: event.target.value || null })}
+          />
+          {settings.target_date && (
+            <button
+              type="button"
+              disabled={disabled}
+              className="rounded-full px-3 py-1.5 text-sm font-bold text-ink-soft hover:bg-paper hover:text-ink"
+              onClick={() => onChange({ ...settings, target_date: null })}
+            >
+              Clear deadline
+            </button>
+          )}
         </div>
       </div>
+
+      <p className="flex items-center gap-2 rounded-xl bg-violet-tint/60 px-4 py-3 text-sm">
+        <span aria-hidden className="text-violet">
+          <Icon name="sparkle" size={16} />
+        </span>
+        <span>
+          That&apos;s about <strong>{weekly} a week</strong> over {settings.study_days.length} day
+          {settings.study_days.length === 1 ? "" : "s"}.
+        </span>
+      </p>
     </div>
   );
 }

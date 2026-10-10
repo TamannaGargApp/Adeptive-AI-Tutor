@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useId } from "react";
 
 import { COMPLETION_LABELS } from "@/lib/labels";
@@ -5,15 +6,8 @@ import type { CompletionStatus } from "@/lib/types";
 
 import { Icon, type IconName } from "./Icon";
 
-/** Tinted backgrounds for icon tiles, cycling through the logo's colours. */
-export const TONES = [
-  "bg-blue-tint text-blue",
-  "bg-violet-tint text-violet",
-  "bg-cyan-tint text-cyan",
-  "bg-violet-tint text-magenta",
-  "bg-sun-tint text-ink",
-  "bg-good-tint text-good",
-];
+/** Vivid gradient icon tiles, cycling through the logo's colours (see .tile-* in globals.css). */
+export const TONES = ["tile-blue", "tile-violet", "tile-cyan", "tile-magenta", "tile-amber", "tile-green"];
 
 export function Spinner({ label = "Loading" }: { label?: string }) {
   return (
@@ -55,6 +49,7 @@ export function PageHeader({
   description,
   actions,
   children,
+  back,
 }: {
   icon?: IconName;
   eyebrow?: string;
@@ -62,27 +57,53 @@ export function PageHeader({
   description?: React.ReactNode;
   actions?: React.ReactNode;
   children?: React.ReactNode;
+  /** A link back to the parent page, shown above the title. */
+  back?: { href: string; label: string };
 }) {
   return (
-    <header className="relative overflow-hidden rounded-3xl border border-line bg-surface px-5 py-6 shadow-[var(--shadow-soft)] sm:px-8 sm:py-7">
-      <div aria-hidden className="bg-dots absolute inset-0 [mask-image:linear-gradient(to_left,black,transparent_55%)]" />
-      <div aria-hidden className="glow -top-24 -right-16 h-60 w-60 bg-violet opacity-25" />
-      <div aria-hidden className="glow -bottom-28 right-40 h-48 w-48 bg-cyan opacity-15" />
+    // An open header, like the landing page: no box, just the title on the page with soft
+    // coloured light behind it, twinkling stars, and a fading divider underneath.
+    <header className="relative pt-2 pb-1 sm:pt-4">
+      {back && (
+        <Link
+          href={back.href}
+          className="relative mb-3 inline-flex items-center gap-1 text-sm font-bold text-violet hover:text-blue"
+        >
+          <span aria-hidden className="inline-block rotate-180">
+            <Icon name="arrow" size={15} />
+          </span>
+          {back.label}
+        </Link>
+      )}
       <div className="relative flex flex-wrap items-center gap-x-5 gap-y-4">
         {icon && (
-          <span className="bg-brand grid h-11 w-11 shrink-0 place-items-center rounded-2xl sm:h-14 sm:w-14 shadow-[0_8px_20px_-8px_rgb(91_62_230/0.6)]">
-            <Icon name={icon} size={26} />
+          <span className="bg-brand grid h-12 w-12 shrink-0 place-items-center rounded-2xl brand-shadow sm:h-16 sm:w-16">
+            <Icon name={icon} size={28} />
           </span>
         )}
-        <div className="min-w-0 flex-1">
+        {/* basis-56: on narrow screens the actions wrap below instead of squeezing the title. */}
+        <div className="min-w-0 flex-1 basis-56">
           {eyebrow && <p className="text-xs font-bold tracking-wider text-violet uppercase">{eyebrow}</p>}
-          <h1 className="text-2xl font-bold sm:text-3xl">{title}</h1>
-          {description && <p className="mt-1 max-w-2xl text-ink-soft">{description}</p>}
+          <h1 className="text-3xl leading-tight font-bold sm:text-4xl">{title}</h1>
+          {description && <p className="mt-1.5 max-w-2xl text-ink-soft sm:text-lg">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
       {children && <div className="relative mt-6">{children}</div>}
+      <div aria-hidden className="hero-divider mt-6" />
     </header>
+  );
+}
+
+/** A four-point star like the one in the logo; twinkles when given the "twinkle" class. */
+export function Sparkle({ className = "", size = 16 }: { className?: string; size?: number }) {
+  return (
+    <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" className={className}>
+      <path
+        fill="currentColor"
+        d="M12 0c.6 5.6 2.4 9.4 12 12-9.6 2.6-11.4 6.4-12 12-.6-5.6-2.4-9.4-12-12 9.6-2.6 11.4-6.4 12-12z"
+      />
+    </svg>
   );
 }
 
@@ -100,7 +121,8 @@ export function SectionHeading({
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 id={id} className="text-xl font-bold">
+        <h2 id={id} className="flex items-center gap-2.5 text-xl font-bold">
+          <span aria-hidden className="heading-accent" />
           {title}
         </h2>
         {description && <p className="mt-0.5 text-sm text-ink-soft">{description}</p>}
@@ -127,7 +149,8 @@ export function StatTile({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="panel card-lift flex flex-col gap-3 p-4 sm:flex-row sm:gap-4 sm:p-5">
+    // Open (no box): an icon tile and a big number, set in a strip by the page (see the dashboard).
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4" data-reveal>
       <span className={`icon-tile h-11 w-11 shrink-0 ${TONES[tone % TONES.length]}`}>
         <Icon name={icon} size={21} />
       </span>
@@ -148,12 +171,15 @@ export function ProgressRing({
   stroke = 9,
   label = "Progress",
   children,
+  colors,
 }: {
   percent: number;
   size?: number;
   stroke?: number;
   label?: string;
   children?: React.ReactNode;
+  /** Gradient start and end colours (indigo → violet by default). */
+  colors?: [string, string];
 }) {
   // useId returns ids like ":r1:", which aren't valid inside url(#...).
   const id = `ring${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
@@ -173,8 +199,8 @@ export function ProgressRing({
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={clamped >= 100 ? "var(--color-good)" : "var(--color-blue)"} />
-            <stop offset="100%" stopColor={clamped >= 100 ? "var(--color-good)" : "var(--color-violet)"} />
+            <stop offset="0%" stopColor={clamped >= 100 ? "var(--color-good)" : (colors?.[0] ?? "var(--color-blue)")} />
+            <stop offset="100%" stopColor={clamped >= 100 ? "var(--color-good)" : (colors?.[1] ?? "var(--color-violet)")} />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-line)" strokeWidth={stroke} />
@@ -238,23 +264,31 @@ export function Segmented<T extends string>({
   size?: "sm" | "md";
 }) {
   return (
-    <div role="group" aria-label={label} className="flex rounded-xl border border-line bg-paper p-1">
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={selected}
-            className={`min-w-0 flex-1 rounded-lg font-bold whitespace-nowrap transition-colors ${
-              size === "sm" ? "px-1.5 py-1.5 text-xs" : "px-3 py-2 text-sm"
-            } ${selected ? "bg-brand shadow-[var(--shadow-soft)]" : "text-ink-soft hover:text-ink"}`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
+    // A container query stacks the options when there isn't room for one row (a narrow sidebar,
+    // or larger browser text), so a long label like "Intermediate" never spills out of the box.
+    <div className="@container">
+      <div
+        role="group"
+        aria-label={label}
+        className="flex flex-col gap-1 rounded-xl border border-line bg-paper p-1 @[16rem]:flex-row @[16rem]:gap-0"
+      >
+        {options.map((option) => {
+          const selected = option.value === value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              aria-pressed={selected}
+              className={`flex-auto rounded-lg font-bold whitespace-nowrap transition-colors ${
+                size === "sm" ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
+              } ${selected ? "bg-brand shadow-[var(--shadow-soft)]" : "text-ink-soft hover:text-ink"}`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -291,7 +325,7 @@ export function CompletionBar({ percent, label = "Completion" }: { percent: numb
     >
       {percent > 0 && (
         <div
-          className={`h-full rounded-full ${percent === 100 ? "bg-good" : "bg-brand"}`}
+          className={`h-full rounded-full ${percent === 100 ? "bg-good" : "bar-glow"}`}
           style={{ width: `${Math.max(percent, 3)}%` }}
         />
       )}

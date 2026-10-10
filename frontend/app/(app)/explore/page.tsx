@@ -34,7 +34,7 @@ export default function ExploreCoursesPage() {
   const selected = subjects?.find((subject) => subject.slug === openSlug);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
       <PageHeader
         icon="compass"
         title="Explore courses"

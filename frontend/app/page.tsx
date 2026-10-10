@@ -78,7 +78,7 @@ const FEATURES: Feature[] = [
     badge: { text: "✓ Correct", tone: "bg-good-tint text-good" },
     span: "lg:col-span-2",
     glow: "--color-cyan",
-    screenshot: { focus: "75% top", file: "code-exercise.png", alt: "A practice question answered correctly with an explanation", label: "Practice" },
+    screenshot: { focus: "center top", file: "code-exercise.png", alt: "A practice question with a Python code editor and tests to run", label: "Practice" },
   },
   {
     icon: "target",

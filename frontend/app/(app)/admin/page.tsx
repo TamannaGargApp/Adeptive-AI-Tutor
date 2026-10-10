@@ -32,7 +32,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
       <PageHeader icon="shield" eyebrow="Administrator" title="Admin" description="Platform activity, learners, and course content." />
 
       <div role="tablist" aria-label="Admin sections" className="flex gap-1 border-b border-line">
@@ -77,7 +77,7 @@ function Overview() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="stat-strip grid grid-cols-2 gap-6 lg:grid-cols-4">
         {(
           [
             { label: "Learners", value: stats.users, icon: "user" },

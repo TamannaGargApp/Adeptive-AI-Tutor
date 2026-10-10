@@ -9,42 +9,43 @@
   All text colours below meet WCAG AA (4.5:1) on surface and paper in both themes.
 */
 @theme {
-  --color-ink: #0f1645;
-  --color-ink-soft: #4a5180;
-  --color-paper: #f5f6ff;
+  --color-ink: #121633;
+  --color-ink-soft: #4b5170;
+  --color-paper: #f5f6fb;
   --color-surface: #ffffff;
-  --color-line: #e1e4f5;
-  --color-blue: #2348e6;
-  --color-blue-deep: #1a2fb0;
-  --color-blue-tint: #e8ecff;
-  --color-violet: #7b34e6;
-  --color-violet-tint: #f2eaff;
-  --color-magenta: #c03fe0;
-  --color-cyan: #087199;
-  --color-cyan-tint: #e2f6fd;
-  --color-sun: #f5b82e;
+  --color-line: #e3e6f0;
+  --color-blue: #4f46e5;
+  --color-blue-deep: #3730a3;
+  --color-blue-tint: #eef0ff;
+  --color-violet: #7c3aed;
+  --color-violet-tint: #f3edff;
+  --color-magenta: #db2777;
+  --color-cyan: #0369a1;
+  --color-cyan-tint: #e0f2fe;
+  --color-sun: #f5b83d;
   --color-sun-tint: #fff4d6;
-  --color-good: #1f7a4a;
-  --color-good-tint: #e0f4e9;
-  --color-bad: #b4441b;
-  --color-bad-tint: #fbe8df;
-  /* Text on blue/green accent backgrounds, and code blocks (dark in both themes). */
+  --color-good: #047857;
+  --color-good-tint: #dcfce7;
+  --color-bad: #be123c;
+  --color-bad-tint: #ffe4e6;
+  /* Text on accent backgrounds, and code blocks (dark in both themes). */
   --color-on-accent: #ffffff;
-  --color-code: #0d1236;
-  --color-code-fg: #eef0ff;
+  --color-code: #0d1024;
+  --color-code-fg: #eef0fa;
 
-  /* Brand gradients. Buttons use the darker pair so white text stays readable. */
-  --gradient-brand: linear-gradient(120deg, #2348e6 0%, #7b34e6 100%);
-  --gradient-brand-hover: linear-gradient(120deg, #1a2fb0 0%, #6a2bd0 100%);
-  --gradient-glow: linear-gradient(120deg, #00b0f0 0%, #7b34e6 50%, #d24bf0 100%);
-  /* For gradient text: deeper stops in light mode so large headings stay above 3:1 contrast. */
-  --gradient-text: linear-gradient(120deg, #0b7fc4 0%, #7b34e6 55%, #b030d0 100%);
+  /* Brand gradients. Buttons use indigo → violet so white text stays readable. */
+  --gradient-brand: linear-gradient(120deg, #4f46e5 0%, #7c3aed 100%);
+  --gradient-brand-hover: linear-gradient(120deg, #4338ca 0%, #6d28d9 100%);
+  /* Decorative glow: sky → indigo → pink. */
+  --gradient-glow: linear-gradient(120deg, #0ea5e9 0%, #6366f1 50%, #ec4899 100%);
+  /* Gradient text: deeper stops in light mode so large headings stay above 3:1 contrast. */
+  --gradient-text: linear-gradient(120deg, #0284c7 0%, #4f46e5 50%, #db2777 100%);
 
-  --shadow-soft: 0 1px 2px rgb(15 22 69 / 0.04), 0 8px 24px -12px rgb(35 72 230 / 0.18);
-  --shadow-lift: 0 2px 4px rgb(15 22 69 / 0.05), 0 18px 40px -16px rgb(35 72 230 / 0.32);
+  --shadow-soft: 0 1px 2px rgb(18 22 51 / 0.05), 0 8px 24px -12px rgb(18 22 51 / 0.14);
+  --shadow-lift: 0 2px 4px rgb(18 22 51 / 0.06), 0 20px 44px -18px rgb(79 70 229 / 0.32);
 
-  --font-sans: var(--font-atkinson), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
 /*
@@ -55,63 +56,65 @@
 */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-ink: #eeeef5;
-  --color-ink-soft: #b4b6c9;
-  --color-paper: #1c1d26;
-  --color-surface: #252632;
-  --color-line: #363849;
-  --color-blue: #8b9dff;
-  --color-blue-deep: #cdd6ff;
-  --color-blue-tint: #2c2f48;
-  --color-violet: #c2a2ff;
-  --color-violet-tint: #322a4a;
-  --color-magenta: #e27df7;
-  --color-cyan: #6fd9f8;
-  --color-cyan-tint: #1f3540;
-  --color-sun-tint: #3a3220;
-  --color-good: #62d39d;
-  --color-good-tint: #1f3329;
-  --color-bad: #f49a72;
-  --color-bad-tint: #3c2620;
-  --color-on-accent: #1c1d26;
-  --color-code: #15161d;
-  --color-code-fg: #eeeef5;
-  --gradient-brand: linear-gradient(120deg, #3a55f0 0%, #8340ec 100%);
-  --gradient-brand-hover: linear-gradient(120deg, #2348e6 0%, #7b34e6 100%);
-  --gradient-text: linear-gradient(120deg, #4fd2f7 0%, #9f7bff 55%, #e27df7 100%);
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px -12px rgb(0 0 0 / 0.45);
-  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 40px -16px rgb(117 144 255 / 0.35);
+  --color-ink: #eef0fa;
+  --color-ink-soft: #a7adc8;
+  --color-paper: #0b0e1a;
+  --color-surface: #151a2e;
+  --color-line: #262c47;
+  --color-blue: #8b8ff8;
+  --color-blue-deep: #d6d7ff;
+  --color-blue-tint: #1e2350;
+  --color-violet: #b79cff;
+  --color-violet-tint: #261f4d;
+  --color-magenta: #f472b6;
+  --color-cyan: #38bdf8;
+  --color-cyan-tint: #0f2a40;
+  --color-sun-tint: #3a2e18;
+  --color-good: #34d399;
+  --color-good-tint: #0f3329;
+  --color-bad: #fb7185;
+  --color-bad-tint: #3d1d28;
+  --color-on-accent: #0b0e1a;
+  --color-code: #080a16;
+  --color-code-fg: #eef0fa;
+  --gradient-brand: linear-gradient(120deg, #5b5ff0 0%, #8b5cf6 100%);
+  --gradient-brand-hover: linear-gradient(120deg, #4f46e5 0%, #7c3aed 100%);
+  --gradient-glow: linear-gradient(120deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%);
+  --gradient-text: linear-gradient(120deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 28px -14px rgb(0 0 0 / 0.75);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 22px 46px -18px rgb(99 102 241 / 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-ink: #eeeef5;
-    --color-ink-soft: #b4b6c9;
-    --color-paper: #1c1d26;
-    --color-surface: #252632;
-    --color-line: #363849;
-    --color-blue: #8b9dff;
-    --color-blue-deep: #cdd6ff;
-    --color-blue-tint: #2c2f48;
-    --color-violet: #c2a2ff;
-    --color-violet-tint: #322a4a;
-    --color-magenta: #e27df7;
-    --color-cyan: #6fd9f8;
-    --color-cyan-tint: #1f3540;
-    --color-sun-tint: #3a3220;
-    --color-good: #62d39d;
-    --color-good-tint: #1f3329;
-    --color-bad: #f49a72;
-    --color-bad-tint: #3c2620;
-    --color-on-accent: #1c1d26;
-    --color-code: #15161d;
-    --color-code-fg: #eeeef5;
-    --gradient-brand: linear-gradient(120deg, #3a55f0 0%, #8340ec 100%);
-    --gradient-brand-hover: linear-gradient(120deg, #2348e6 0%, #7b34e6 100%);
-    --gradient-text: linear-gradient(120deg, #4fd2f7 0%, #9f7bff 55%, #e27df7 100%);
-    --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px -12px rgb(0 0 0 / 0.45);
-    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 40px -16px rgb(117 144 255 / 0.35);
+    --color-ink: #eef0fa;
+    --color-ink-soft: #a7adc8;
+    --color-paper: #0b0e1a;
+    --color-surface: #151a2e;
+    --color-line: #262c47;
+    --color-blue: #8b8ff8;
+    --color-blue-deep: #d6d7ff;
+    --color-blue-tint: #1e2350;
+    --color-violet: #b79cff;
+    --color-violet-tint: #261f4d;
+    --color-magenta: #f472b6;
+    --color-cyan: #38bdf8;
+    --color-cyan-tint: #0f2a40;
+    --color-sun-tint: #3a2e18;
+    --color-good: #34d399;
+    --color-good-tint: #0f3329;
+    --color-bad: #fb7185;
+    --color-bad-tint: #3d1d28;
+    --color-on-accent: #0b0e1a;
+    --color-code: #080a16;
+    --color-code-fg: #eef0fa;
+    --gradient-brand: linear-gradient(120deg, #5b5ff0 0%, #8b5cf6 100%);
+    --gradient-brand-hover: linear-gradient(120deg, #4f46e5 0%, #7c3aed 100%);
+    --gradient-glow: linear-gradient(120deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%);
+    --gradient-text: linear-gradient(120deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%);
+    --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 28px -14px rgb(0 0 0 / 0.75);
+    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 22px 46px -18px rgb(99 102 241 / 0.45);
   }
 }
 
@@ -273,13 +276,19 @@ h3 {
     box-shadow: var(--shadow-lift);
     border-color: color-mix(in srgb, var(--color-violet) 35%, var(--color-line));
   }
-  /* Soft coloured blur behind sections, echoing the logo's glow. Decorative only. */
+  /*
+    Soft coloured light behind sections, echoing the logo's glow. Decorative only.
+    Faded with a radial mask rather than filter: blur(). A blur filter makes the browser paint the
+    glow and anything over it on separate GPU layers, and on Windows text on those layers loses its
+    sharp (ClearType) rendering and looks blurry.
+  */
   .glow {
     position: absolute;
     border-radius: 9999px;
-    filter: blur(70px);
     opacity: 0.45;
     pointer-events: none;
+    scale: 1.5;
+    mask-image: radial-gradient(closest-side, black 20%, transparent);
   }
   /* A subtle dotted "constellation" pattern, like the network in the logo. */
   .bg-dots {
@@ -321,4 +330,283 @@ h3 {
     opacity: 0;
     transform: translateY(6px);
   }
+}
+/* ======================================================================================
+   Site look: "midnight & meaning" (landing, login and the app share these colours).
+   A neutral base so the content is what stands out, with accents that each mean something:
+     indigo/violet = brand and the AI tutor       teal/emerald = progress and success
+     orange        = streaks and practice         sky blue     = reading
+     pink          = quizzes                      amber        = XP and highlights
+
+   The app background is deliberately calm: the page colour with one soft glow at the top, so
+   cards and text stand out. (Large fixed gradients were dropped: browsers drew them in visible
+   blocks.) Sections animate into view as you scroll, each from the side it sits on.
+   No blur filters, so text stays sharp on Windows; all motion stops for people who prefer
+   reduced motion.
+   ====================================================================================== */
+:root {
+  --hero-bg:
+    radial-gradient(70% 130% at 0% 0%, rgb(99 102 241 / 0.2), transparent 62%),
+    radial-gradient(55% 120% at 100% 0%, rgb(249 115 22 / 0.15), transparent 60%),
+    radial-gradient(60% 130% at 90% 120%, rgb(20 184 166 / 0.17), transparent 62%),
+    linear-gradient(120deg, #fbfbff 0%, #fdf9f6 100%);
+  --hero-border: rgb(79 70 229 / 0.16);
+  --top-glow: rgb(99 102 241 / 0.1);
+  --card-glow: 0 0 0 1px rgb(79 70 229 / 0.28), 0 18px 40px -16px rgb(79 70 229 / 0.35);
+  --gradient-progress: linear-gradient(90deg, #14b8a6, #0ea5e9, #6366f1, #14b8a6);
+  --row-hover: rgb(79 70 229 / 0.04);
+}
+:root[data-theme="dark"] {
+  --hero-bg:
+    radial-gradient(70% 130% at 0% 0%, rgb(99 102 241 / 0.5), transparent 62%),
+    radial-gradient(55% 120% at 100% 0%, rgb(249 115 22 / 0.26), transparent 60%),
+    radial-gradient(60% 130% at 90% 120%, rgb(20 184 166 / 0.32), transparent 62%),
+    linear-gradient(120deg, #161b3d 0%, #1b1734 100%);
+  --hero-border: rgb(139 143 248 / 0.28);
+  --top-glow: rgb(99 102 241 / 0.16);
+  --card-glow: 0 0 0 1px rgb(139 143 248 / 0.45), 0 18px 40px -16px rgb(99 102 241 / 0.5);
+  --gradient-progress: linear-gradient(90deg, #14b8a6, #38bdf8, #818cf8, #14b8a6);
+  --row-hover: rgb(255 255 255 / 0.03);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --hero-bg:
+      radial-gradient(70% 130% at 0% 0%, rgb(99 102 241 / 0.5), transparent 62%),
+      radial-gradient(55% 120% at 100% 0%, rgb(249 115 22 / 0.26), transparent 60%),
+      radial-gradient(60% 130% at 90% 120%, rgb(20 184 166 / 0.32), transparent 62%),
+      linear-gradient(120deg, #161b3d 0%, #1b1734 100%);
+    --hero-border: rgb(139 143 248 / 0.28);
+    --top-glow: rgb(99 102 241 / 0.16);
+    --card-glow: 0 0 0 1px rgb(139 143 248 / 0.45), 0 18px 40px -16px rgb(99 102 241 / 0.5);
+    --gradient-progress: linear-gradient(90deg, #14b8a6, #38bdf8, #818cf8, #14b8a6);
+    --row-hover: rgb(255 255 255 / 0.03);
+  }
+}
+
+/* App background: page colour, one soft glow behind the top of the page, a very faint dot grid. */
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background-color: var(--color-paper);
+  background-image:
+    radial-gradient(70rem 26rem at 50% -8rem, var(--top-glow), transparent 70%),
+    radial-gradient(color-mix(in srgb, var(--color-ink) 5%, transparent) 1px, transparent 1.4px);
+  background-size: 100% 100%, 28px 28px;
+  background-repeat: no-repeat, repeat;
+}
+.app-shell .card-lift:hover {
+  box-shadow: var(--shadow-lift), var(--card-glow);
+}
+
+/* ---------- Page headers ---------- */
+.hero-surface {
+  background: var(--hero-bg);
+  border-color: var(--hero-border);
+}
+
+/* Four-point stars like the logo's sparkle, twinkling in page headers. */
+.twinkle {
+  position: absolute;
+  pointer-events: none;
+  animation: twinkle 3.6s ease-in-out infinite;
+}
+.twinkle-2 {
+  animation-delay: 1.4s;
+  animation-duration: 4.4s;
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    scale: 0.8;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.1;
+  }
+}
+
+/* ---------- Progress: teal → sky → indigo with a slow shimmer ---------- */
+.bar-glow {
+  background: var(--gradient-progress);
+  background-size: 200% 100%;
+  animation: shimmer 7s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- Icon tiles: one colour per meaning ---------- */
+.tile-cyan,
+.tile-blue,
+.tile-violet,
+.tile-magenta,
+.tile-amber,
+.tile-green {
+  color: #ffffff;
+  box-shadow: 0 8px 18px -10px var(--tile-shadow);
+}
+/* Sky: reading. */
+.tile-cyan {
+  background: linear-gradient(135deg, #0ea5e9 0%, #22c3ee 100%);
+  --tile-shadow: rgb(14 165 233 / 0.75);
+}
+/* Indigo: the AI tutor and learning. */
+.tile-blue {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --tile-shadow: rgb(99 102 241 / 0.75);
+}
+/* Violet: tests and levels. */
+.tile-violet {
+  background: linear-gradient(135deg, #8b5cf6 0%, #c026d3 100%);
+  --tile-shadow: rgb(139 92 246 / 0.75);
+}
+/* Pink: quizzes. */
+.tile-magenta {
+  background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+  --tile-shadow: rgb(236 72 153 / 0.75);
+}
+/* Orange: streaks and practice. */
+.tile-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  --tile-shadow: rgb(249 115 22 / 0.75);
+}
+/* Teal: progress and success. */
+.tile-green {
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  --tile-shadow: rgb(16 185 129 / 0.75);
+}
+
+/* A warm "sunset" card for what to do next, so it stands out from the indigo brand colour. */
+.bg-sunset {
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 52%, #8b5cf6 100%);
+  color: #ffffff;
+}
+
+/* ---------- Primary buttons: a light shine sweeps across on hover ---------- */
+.app-shell .btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+.app-shell .btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.3) 50%, transparent 70%);
+  translate: -120% 0;
+  transition: translate 0.7s ease;
+  pointer-events: none;
+}
+.app-shell .btn-primary:hover:not(:disabled)::after {
+  translate: 120% 0;
+}
+
+/*
+  ---------- Scroll reveal (see components/RevealOnScroll.tsx) ----------
+  Sections start slightly offset and transparent, then settle in when they scroll into view:
+  from the left or right for side-by-side cards, rising for full-width ones, zooming for small
+  tiles. Uses the separate translate/scale properties, so hover lifts (transform) still work.
+*/
+.reveal {
+  opacity: 0;
+  transition:
+    opacity 0.6s ease,
+    translate 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    scale 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+  transition-delay: var(--reveal-delay, 0ms), var(--reveal-delay, 0ms), var(--reveal-delay, 0ms), 0ms, 0ms, 0ms;
+}
+.reveal-up {
+  translate: 0 22px;
+}
+.reveal-left {
+  translate: -28px 0;
+}
+.reveal-right {
+  translate: 28px 0;
+}
+.reveal-zoom {
+  scale: 0.94;
+}
+.reveal.is-visible {
+  opacity: 1;
+  translate: none;
+  scale: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    translate: none;
+    scale: none;
+  }
+}
+
+/* ---------- Open layout pieces ---------- */
+/* The fading line under page headers. */
+.hero-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-line) 15%, var(--color-line) 85%, transparent);
+}
+/* The small colour bar before section headings. */
+.heading-accent {
+  width: 0.375rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #38bdf8, #6366f1, #ec4899);
+}
+.brand-shadow {
+  box-shadow: 0 10px 24px -10px rgb(99 102 241 / 0.8);
+}
+/* A row of figures with dividers between them, like the landing page's stats strip. */
+.stat-strip {
+  border-block: 1px solid var(--color-line);
+  padding-block: 1.5rem;
+}
+@media (min-width: 1024px) {
+  .stat-strip > * + * {
+    border-left: 1px solid var(--color-line);
+    padding-left: 1.5rem;
+  }
+}
+/* Cards are lighter inside the app: no heavy shadow, a softer fill, so they read as content. */
+.app-shell .panel {
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  border-color: color-mix(in srgb, var(--color-line) 85%, transparent);
+  box-shadow: none;
+}
+
+/* ---------- Achievements colours ---------- */
+/* Streak days: warm orange → pink (orange means streaks). */
+.streak-on {
+  background: linear-gradient(135deg, #f59e0b, #f97316 45%, #ec4899);
+  box-shadow: 0 4px 12px -6px rgb(249 115 22 / 0.8);
+}
+/* Level progress: violet → pink. */
+.level-fill {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6 45%, #ec4899);
+}
+/* XP amounts in amber (amber means XP). */
+.xp-pill {
+  background: var(--color-sun-tint);
+  color: #a15c07;
+}
+:root[data-theme="dark"] .xp-pill {
+  color: #fbbf24;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .xp-pill {
+    color: #fbbf24;
+  }
+}
+/* Activity chart: correct answers in teal (success), incorrect in soft orange. */
+.chart-correct {
+  background: linear-gradient(180deg, #2dd4bf, #10b981);
+}
+.chart-wrong {
+  background: rgb(249 115 22 / 0.45);
 }

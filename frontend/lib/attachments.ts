@@ -42,9 +42,11 @@ export async function readAttachment(file: File, limits: ReadLimits = LEARNER_LI
   let text: string;
   let pages: number | null = null;
   if (lowerName.endsWith(".pdf")) {
-    ({ text, pages } = await extractPdfText(file));
+    ({ text, pages } = await extractPdfText(file, limits.maxChars));
   } else if (TEXT_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
-    text = await file.text();
+    // Only the beginning is used, so very large files are never read whole into memory.
+    // A character takes at most 4 bytes in UTF-8.
+    text = await file.slice(0, limits.maxChars * 4 + 4).text();
     // A "text" file full of NUL bytes is really binary (e.g. a renamed image).
     if ((text.match(/\u0000/g)?.length ?? 0) > 10) throw new Error(`${file.name} doesn't look like a text file.`);
   } else {
@@ -55,7 +57,7 @@ export async function readAttachment(file: File, limits: ReadLimits = LEARNER_LI
   if (!text) {
     throw new Error(`No text could be read from ${file.name}. Scanned PDFs (pictures of pages) aren't supported.`);
   }
-  const truncated = text.length > limits.maxChars;
+  const truncated = text.length > limits.maxChars || (pages === null && file.size > limits.maxChars * 4 + 4);
   return {
     name: file.name,
     text: truncated ? text.slice(0, limits.maxChars) : text,
@@ -65,18 +67,32 @@ export async function readAttachment(file: File, limits: ReadLimits = LEARNER_LI
   };
 }
 
-async function extractPdfText(file: File): Promise<{ text: string; pages: number }> {
+async function extractPdfText(file: File, maxChars: number): Promise<{ text: string; pages: number }> {
   // Loaded only when a PDF is attached, so the library isn't part of every page load.
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-  const pageTexts: string[] = [];
-  for (let number = 1; number <= pdf.numPages; number++) {
-    const page = await pdf.getPage(number);
-    const content = await page.getTextContent();
-    pageTexts.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+  // Opened from an object URL so pdf.js reads only the parts it needs, instead of copying the whole
+  // file into memory (study set files can be up to 2 GB).
+  const url = URL.createObjectURL(file);
+  try {
+    const loadingTask = pdfjs.getDocument({ url, disableAutoFetch: true });
+    const pdf = await loadingTask.promise;
+    const pageTexts: string[] = [];
+    let length = 0;
+    // Stop once there's enough text: the rest wouldn't be used.
+    for (let number = 1; number <= pdf.numPages && length <= maxChars; number++) {
+      const page = await pdf.getPage(number);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
+      pageTexts.push(pageText);
+      length += pageText.length + 2;
+    }
+    const pages = pdf.numPages;
+    await loadingTask.destroy(); // frees the worker's copy of the document
+    return { text: pageTexts.join("\n\n"), pages };
+  } finally {
+    URL.revokeObjectURL(url);
   }
-  return { text: pageTexts.join("\n\n"), pages: pdf.numPages };
 }
 
 // ---------- Browser storage (IndexedDB), one list of attachments per conversation ----------
@@ -118,15 +134,4 @@ export async function saveAttachments(sessionId: string, attachments: Attachment
   } catch {
     // Not saved; the files still work until the page is closed.
   }
-}
-
-/** The file's raw bytes as base64, for uploading the original alongside its extracted text. */
-export async function fileToBase64(file: File): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = "";
-  const chunk = 0x8000; // String.fromCharCode can't take millions of arguments at once
-  for (let index = 0; index < bytes.length; index += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
-  }
-  return btoa(binary);
 }

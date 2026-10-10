@@ -47,24 +47,45 @@ def split_into_chunks(text: str) -> list[dict]:
     heading = ""
     buffer: list[str] = []
 
+    paragraph: list[str] = []
+
     def flush() -> None:
         body = "\n\n".join(buffer).strip()
         if body:
             chunks.append({"heading": heading, "text": body})
         buffer.clear()
 
-    for paragraph in re.split(r"\n\s*\n", text):
-        paragraph = paragraph.strip()
-        if not paragraph:
+    def end_paragraph() -> None:
+        text_block = "\n".join(paragraph).strip()
+        paragraph.clear()
+        if not text_block:
+            return
+        if buffer and sum(len(part) for part in buffer) + len(text_block) > CHUNK_TARGET_CHARS:
+            flush()
+        buffer.append(text_block)
+
+    # Line by line, so a heading is recognised even when its text starts on the very next line
+    # ("## The for loop\nA for loop repeats..."), which is how most notes are written.
+    # Inside ``` code blocks, "# comment" lines and blank lines belong to the code.
+    in_code = False
+    for line in text.splitlines():
+        if line.lstrip().startswith(("```", "~~~")):
+            in_code = not in_code
+            paragraph.append(line)
             continue
-        heading_match = re.match(r"^#{1,6}\s+(.+)", paragraph)
-        if heading_match and "\n" not in paragraph:
+        if in_code:
+            paragraph.append(line)
+            continue
+        heading_match = re.match(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if heading_match:
+            end_paragraph()
             flush()
             heading = heading_match.group(1).strip()
-            continue
-        if sum(len(part) for part in buffer) + len(paragraph) > CHUNK_TARGET_CHARS and buffer:
-            flush()
-        buffer.append(paragraph)
+        elif line.strip():
+            paragraph.append(line)
+        else:
+            end_paragraph()
+    end_paragraph()
     flush()
     return chunks
 

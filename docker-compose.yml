@@ -1,31 +1,72 @@
-# Optional: run everything in containers. The app also runs without Docker (see README).
+# Run the whole app in containers: MongoDB, the FastAPI backend and the Next.js frontend.
+#
+#   1. Fill in backend/.env (copy backend/.env.example).
+#   2. docker compose up --build
+#   3. Open http://localhost:3003
+#
+# Ports on your computer: frontend 3003, backend 8002, MongoDB 27021.
+# Inside the containers the apps always use 3000, 8000 and 27017.
+# If you change the frontend or backend port, also change the two lines marked "PORT" below.
+
+name: adaptive-ai-tutor
+
 services:
   mongo:
     image: mongo:7
+    container_name: ai-tutor-mongo
+    restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "27021:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
   backend:
     build: ./backend
+    image: adaptive-ai-tutor-backend:latest
+    container_name: ai-tutor-backend
+    restart: unless-stopped
     env_file: ./backend/.env
     environment:
-      MONGODB_URI: mongodb://mongo:27017
+      # PORT: the site's address, so the API accepts requests from it (must match the frontend port).
+      CORS_ORIGINS: http://localhost:3003,http://127.0.0.1:3003
+    command: ["uv", "run", "--no-dev", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
-      - "8000:8000"
+      - "8002:8000"
+    volumes:
+      # Study set files (originals and extracted text) when local storage is used.
+      - study-files:/app/storage
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   frontend:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        # PORT: the address the browser uses to reach the API (must match the backend port).
+        NEXT_PUBLIC_API_URL: http://localhost:8002
+    image: adaptive-ai-tutor-frontend:latest
+    container_name: ai-tutor-frontend
+    restart: unless-stopped
+    command: ["npm", "start"]
     ports:
-      - "3000:3000"
+      - "3003:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   mongo-data:
+  study-files:

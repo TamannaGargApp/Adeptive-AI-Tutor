@@ -8,7 +8,7 @@ import ChatWindow from "@/components/ChatWindow";
 import PracticePanel from "@/components/PracticePanel";
 import ReadingPanel from "@/components/ReadingPanel";
 import { Icon } from "@/components/Icon";
-import Sidebar, { MODE_ICONS } from "@/components/Sidebar";
+import Sidebar, { MODE_ICONS, MODE_TILES } from "@/components/Sidebar";
 import { Alert, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -133,8 +133,8 @@ function TutorWorkspace() {
       />
 
       <section className="flex min-h-0 flex-1 flex-col" aria-label="Tutor">
-        <div className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-4 py-3 sm:gap-3 sm:px-6">
-          <span aria-hidden className="bg-brand hidden h-10 w-10 shrink-0 place-items-center rounded-xl sm:grid">
+        <div className="hero-surface flex shrink-0 items-center gap-2 border-b px-4 py-3 sm:gap-3 sm:px-6">
+          <span aria-hidden className={`hidden h-10 w-10 shrink-0 place-items-center rounded-xl sm:grid ${MODE_TILES[mode]}`}>
             <Icon name={MODE_ICONS[mode]} size={19} />
           </span>
           <div className="min-w-0 flex-1">

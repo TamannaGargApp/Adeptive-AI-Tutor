@@ -1,7 +1,5 @@
 """Study sets, with files stored in a temporary local folder (no AWS needed for tests)."""
 
-import base64
-
 import pytest
 
 from app.core.config import get_settings
@@ -27,13 +25,30 @@ def local_storage(tmp_path, monkeypatch):
     get_file_storage.cache_clear()
 
 
+async def _upload(client, upload: dict, content: bytes):
+    """Send the original file the way the browser does with local storage."""
+    assert upload["direct"] is False
+    return await client.put(upload["url"], content=content, headers=upload["headers"])
+
+
 async def _create(client, with_file: bool = True) -> dict:
-    body = {"title": "Biology: photosynthesis", "file_name": "photo.txt", "content_type": "text/plain", "text": MATERIAL}
-    if with_file:
-        body["file_base64"] = base64.b64encode(MATERIAL.encode()).decode()
+    body = {
+        "title": "Biology: photosynthesis",
+        "file_name": "photo.txt",
+        "content_type": "text/plain",
+        "file_size": len(MATERIAL.encode()),
+        "text": MATERIAL,
+    }
     response = await client.post("/api/study-sets", json=body)
     assert response.status_code == 201
-    return response.json()
+    created = response.json()
+    if with_file:
+        assert (await _upload(client, created["upload"], MATERIAL.encode())).status_code == 200
+    return created["study_set"]
+
+
+def _material(name: str, text: str, size: int | None = None) -> dict:
+    return {"file_name": name, "content_type": "text/plain", "file_size": size or len(text.encode()), "text": text}
 
 
 async def test_creating_a_set_stores_the_file_outside_the_database(auth_client, database, local_storage):
@@ -150,3 +165,83 @@ async def test_a_new_quiz_avoids_the_previous_questions(auth_client, fake_ai):
     await auth_client.post(f"/api/study-sets/{created['id']}/tools/quiz")
     await auth_client.post(f"/api/study-sets/{created['id']}/tools/quiz?regenerate=true")
     assert "Do NOT repeat" in fake_ai.prompts[-1] and "What is glucose?" in fake_ai.prompts[-1]
+
+
+CELLS = "Cells are the basic unit of life. Plant cells have chloroplasts, where photosynthesis happens. " * 3
+
+
+async def test_adding_a_file_marks_tools_stale_and_uses_both_files(auth_client, fake_ai, local_storage):
+    created = await _create(auth_client)
+    fake_ai.responses[StudySummaryResponse] = StudySummaryResponse(overview="Plants.", key_points=[], key_terms=[])
+    await auth_client.post(f"/api/study-sets/{created['id']}/tools/summary")
+
+    added = await auth_client.post(f"/api/study-sets/{created['id']}/materials", json=_material("cells.txt", CELLS))
+    assert added.status_code == 201
+    body = added.json()
+    assert body["study_set"]["stale_tools"] == ["summary"]
+    assert [item["file_name"] for item in body["study_set"]["materials"]] == ["photo.txt", "cells.txt"]
+    assert body["study_set"]["materials"][1]["has_file"] is False
+
+    uploaded = await _upload(auth_client, body["upload"], CELLS.encode())
+    assert uploaded.json()["materials"][1]["has_file"] is True
+    assert uploaded.json()["storage_used"] == len(MATERIAL.encode()) + len(CELLS.encode())
+
+    # Regenerating uses both files, each labelled, and clears the stale mark.
+    refreshed = (await auth_client.post(f"/api/study-sets/{created['id']}/tools/summary?regenerate=true")).json()
+    assert "Source 1: photo.txt" in fake_ai.prompts[-1] and "Source 2: cells.txt" in fake_ai.prompts[-1]
+    assert refreshed["stale_tools"] == []
+    assert refreshed["material_count"] == 2
+
+    # Each file can be downloaded on its own.
+    material_id = body["upload"]["material_id"]
+    download = await auth_client.get(f"/api/study-sets/{created['id']}/download?material_id={material_id}")
+    assert download.content.decode().startswith("Cells")
+
+
+async def test_files_in_a_set_are_limited_to_2_gb(auth_client):
+    created = await _create(auth_client)
+    too_big = _material("huge.pdf", CELLS, size=2 * 1024**3)
+    response = await auth_client.post(f"/api/study-sets/{created['id']}/materials", json=too_big)
+    assert response.status_code == 413
+    assert "2 GB" in response.json()["detail"]
+
+
+async def test_an_upload_bigger_than_declared_is_refused(auth_client, local_storage):
+    created = await _create(auth_client)
+    body = (await auth_client.post(f"/api/study-sets/{created['id']}/materials", json=_material("a.txt", CELLS, 10))).json()
+    assert (await _upload(auth_client, body["upload"], CELLS.encode())).status_code == 413
+    detail = (await auth_client.get(f"/api/study-sets/{created['id']}")).json()
+    assert detail["materials"][1]["has_file"] is False
+    assert not any(local_storage.rglob("*.part"))
+
+
+async def test_removing_a_file_keeps_at_least_one(auth_client, local_storage):
+    created = await _create(auth_client)
+    body = (await auth_client.post(f"/api/study-sets/{created['id']}/materials", json=_material("cells.txt", CELLS))).json()
+    await _upload(auth_client, body["upload"], CELLS.encode())
+    first_id = body["study_set"]["materials"][0]["id"]
+
+    removed = (await auth_client.delete(f"/api/study-sets/{created['id']}/materials/{first_id}")).json()
+    assert [item["file_name"] for item in removed["materials"]] == ["cells.txt"]
+    assert removed["file_name"] == "cells.txt"
+    last_id = removed["materials"][0]["id"]
+    assert (await auth_client.delete(f"/api/study-sets/{created['id']}/materials/{last_id}")).status_code == 409
+
+
+async def test_older_single_file_sets_can_take_more_files(auth_client, database, local_storage):
+    created = await _create(auth_client)
+    # Rewrite the set the way it was stored before sets could hold several files.
+    stored = await database.study_sets.find_one({})
+    material = stored["materials"][0]
+    await database.study_sets.update_one(
+        {"_id": stored["_id"]},
+        {
+            "$unset": {"materials": "", "stale_tools": ""},
+            "$set": {"text_key": material["text_key"], "file_key": material["file_key"], "content_type": "text/plain"},
+        },
+    )
+    legacy = (await auth_client.get(f"/api/study-sets/{created['id']}")).json()
+    assert [item["id"] for item in legacy["materials"]] == ["original"]
+
+    added = await auth_client.post(f"/api/study-sets/{created['id']}/materials", json=_material("cells.txt", CELLS))
+    assert [item["file_name"] for item in added.json()["study_set"]["materials"]] == ["photo.txt", "cells.txt"]

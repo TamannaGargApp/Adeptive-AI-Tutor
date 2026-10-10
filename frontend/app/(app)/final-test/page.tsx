@@ -8,7 +8,8 @@ import Countdown from "@/components/Countdown";
 import CourseExamStatus from "@/components/CourseExamStatus";
 import FinalTestResults from "@/components/FinalTestResults";
 import FinalTestRunner from "@/components/FinalTestRunner";
-import { Alert, PageHeader, Spinner } from "@/components/ui";
+import { Icon } from "@/components/Icon";
+import { Alert, PageHeader, SectionHeading, Spinner } from "@/components/ui";
 import WaitingMessage from "@/components/WaitingMessage";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -113,6 +114,7 @@ function FinalTestPageContent() {
   const currentCourse = subjects.find((item) => item.slug === (courseSlug ?? user?.current_subject));
 
   let content: React.ReactNode;
+  let wide = false;
   if (testId && test && test.id === testId) {
     if (!test.submitted) {
       content = <FinalTestRunner test={test} onFinished={handleFinished} />;
@@ -155,6 +157,7 @@ function FinalTestPageContent() {
       />
     );
   } else if (!courseSlug) {
+    wide = true;
     content = (
       <TestPicker
         topics={topics}
@@ -168,7 +171,8 @@ function FinalTestPageContent() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    // The list of tests uses the full width; a single test stays in a readable column.
+    <div className={`mx-auto w-full space-y-6 px-4 py-8 ${wide ? "max-w-7xl" : "max-w-3xl"}`}>
       {error && <Alert>{error}</Alert>}
       {content}
     </div>
@@ -188,25 +192,36 @@ function TestPicker({
 }) {
   const examQuestions = topics.length * COURSE_EXAM_QUESTIONS_PER_TOPIC;
   const progressBySlug = new Map(progress?.topics.map((item) => [item.topic_slug, item]));
+  const passedCount = progress?.topics.filter((item) => item.final_test_passed).length ?? 0;
   return (
     <>
       <PageHeader icon="trophy" title="Final tests" description="Timed tests with answers revealed only at the end." />
 
       {course && progress && !progress.course_exam_unlocked && (
-        <div className="space-y-2">
-          <h2 className="text-lg font-bold">{course.name} course exam</h2>
+        <section className="space-y-3 border-y border-line py-5" data-reveal>
+          <h2 className="flex items-center gap-3 text-lg font-bold">
+            <span aria-hidden className="icon-tile tile-green h-10 w-10">
+              <Icon name="shield" size={20} />
+            </span>
+            {course.name} course exam
+          </h2>
           <CourseExamStatus progress={progress} />
-        </div>
+        </section>
       )}
 
       {course && progress?.course_exam_unlocked && (
         <Link
           href={courseExamLink(course.slug)}
-          className="block rounded-xl border-2 border-sun bg-sun-tint p-5 hover:border-blue"
+          className="bg-sunset card-lift relative flex flex-wrap items-center gap-5 overflow-hidden rounded-2xl p-6 sm:p-8"
+          data-reveal
         >
-          <span className="text-sm font-bold text-ink-soft">Course exam</span>
-          <span className="mt-1 block text-2xl font-bold">{course.name} course exam</span>
-          <span className="mt-1 block text-ink">
+          <span aria-hidden className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/20">
+            <Icon name="trophy" size={26} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="text-xs font-bold tracking-wider text-white/80 uppercase">Course exam unlocked</span>
+            <span className="mt-1 block text-2xl font-bold sm:text-3xl">{course.name} course exam</span>
+          <span className="mt-1 block text-white/90">
             {examQuestions} questions across all {topics.length} topics ·{" "}
             {minutes(examQuestions)} minutes
             {progress.course_exam_passed ? " · ✓ Completed" : ""}
@@ -218,27 +233,54 @@ function TestPicker({
               </>
             )}
           </span>
+          </span>
+          <span className="rounded-full bg-white px-4 py-2 font-bold text-ink">Start exam →</span>
         </Link>
       )}
 
-      <section>
-        <h2 className="mb-2 text-lg font-bold">Topic tests</h2>
-        <ul className="panel divide-y divide-line">
-          {topics.map((item) => (
-            <li key={item.slug}>
-              <button
-                type="button"
-                onClick={() => onPickTopic(item.slug)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-paper"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block font-bold">{item.name}</span>
-                  <span className="text-sm text-ink-soft">{item.description}</span>
-                </span>
-                <TopicTestStatus progress={progressBySlug.get(item.slug)} />
-              </button>
-            </li>
-          ))}
+      <section aria-labelledby="topic-tests-heading">
+        <SectionHeading
+          id="topic-tests-heading"
+          title="Topic tests"
+          description={`${passedCount} of ${topics.length} passed · pass each topic's test with ${PASS_MARK}% or more`}
+        />
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {topics.map((item, index) => {
+            const itemProgress = progressBySlug.get(item.slug);
+            const passed = Boolean(itemProgress?.final_test_passed);
+            const tried = itemProgress?.final_test_best !== null && itemProgress?.final_test_best !== undefined;
+            return (
+              <li key={item.slug}>
+                <button
+                  type="button"
+                  onClick={() => onPickTopic(item.slug)}
+                  className="panel card-lift group flex h-full w-full flex-col gap-3 p-5 text-left"
+                >
+                  <span className="flex items-start justify-between gap-3">
+                    <span
+                      aria-hidden
+                      className={`icon-tile h-11 w-11 ${passed ? "tile-green" : tried ? "tile-amber" : "tile-violet"}`}
+                    >
+                      {passed ? <Icon name="check" size={20} /> : <span className="font-bold">{index + 1}</span>}
+                    </span>
+                    <TopicTestStatus progress={itemProgress} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-bold">{item.name}</span>
+                    <span className="mt-0.5 block text-sm text-ink-soft">{item.description}</span>
+                  </span>
+                  <span className="mt-auto flex items-center justify-between border-t border-line pt-3 text-sm">
+                    <span className="text-ink-soft">
+                      {TOPIC_TEST_LENGTH} questions · {minutes(TOPIC_TEST_LENGTH)} min
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-bold text-violet transition-transform group-hover:translate-x-0.5">
+                      {passed ? "Retake" : tried ? "Try again" : "Start"} <Icon name="arrow" size={15} />
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </>

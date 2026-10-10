@@ -35,7 +35,7 @@ export default function ProgressPage() {
   }, [user?.current_subject]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8">
       <PageHeader
         icon="chart"
         eyebrow={progress ? `${progress.subject_name} course` : undefined}

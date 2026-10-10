@@ -9,6 +9,9 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   sessionExpired: boolean;
+  /** True right after the learner logs out, so signed-in pages send them to the landing page
+   * instead of the login form. */
+  loggedOut: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
@@ -21,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [loggedOut, setLoggedOut] = useState(false);
 
   useEffect(() => {
     api
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUser = useCallback((next: User) => {
     setUserState(next);
     setSessionExpired(false);
+    setLoggedOut(false);
   }, []);
 
   const login = useCallback(
@@ -66,14 +71,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.logout();
     } finally {
+      setLoggedOut(true);
       setUserState(null);
       setSessionExpired(false);
     }
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, sessionExpired, login, register, logout, setUser }),
-    [user, loading, sessionExpired, login, register, logout, setUser],
+    () => ({ user, loading, sessionExpired, loggedOut, login, register, logout, setUser }),
+    [user, loading, sessionExpired, loggedOut, login, register, logout, setUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -66,7 +66,7 @@ function StudyPlanPageContent() {
   if (plan === null || mode) {
     const wizardMode = plan === null ? ({ kind: "new" } as WizardMode) : (mode as WizardMode);
     return (
-      <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <PageHeader
           icon="calendar"
           eyebrow="Study plan"
@@ -93,7 +93,7 @@ function StudyPlanPageContent() {
   const order = plan.strategy.courses.map((course) => course.subject_slug);
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
       <PageHeader
         icon="calendar"
         eyebrow="Your study plan"
@@ -129,6 +129,39 @@ function StudyPlanPageContent() {
 
       {error && <Alert>{error}</Alert>}
 
+      {/* Two columns on large screens: today and what's next on the left, the plan overview on the right. */}
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_24rem]">
+      <div className="min-w-0 space-y-6">
+        <TodayPlanCard plan={plan} onToggle={toggle} />
+
+        <section aria-labelledby="schedule-heading" className="space-y-4">
+          <h2 id="schedule-heading" className="text-xl font-bold">
+            Upcoming
+          </h2>
+          {past.length > 0 && (
+            <button
+              type="button"
+              className="text-sm font-bold text-blue hover:text-blue-deep"
+              aria-expanded={showPast}
+              onClick={() => setShowPast((current) => !current)}
+            >
+              {showPast ? "Hide" : "Show"} earlier days ({past.length})
+            </button>
+          )}
+          {[...(showPast ? past : []), ...upcoming].map((day) => (
+            <div key={day.date} data-reveal>
+              <h3 className={`mb-2 text-sm font-bold ${day.date < plan.today ? "text-ink-soft" : ""}`}>{formatPlanDate(day.date)}</h3>
+              <ul className="space-y-2">
+                {day.tasks.map((task) => (
+                  <PlanTaskItem key={task.id} task={task} onToggle={toggle} />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      </div>
+
+      <aside className="space-y-6 lg:sticky lg:top-24">
       <section className="panel space-y-3 p-5" aria-label="Plan summary">
         <p className="flex flex-wrap items-baseline justify-between gap-2">
           <span>
@@ -151,8 +184,6 @@ function StudyPlanPageContent() {
         </p>
         <p className="text-sm text-ink-soft">{plan.strategy.summary}</p>
       </section>
-
-      <TodayPlanCard plan={plan} onToggle={toggle} />
 
       <section className="panel space-y-3 p-5" aria-labelledby="plan-courses-heading">
         <h2 id="plan-courses-heading" className="text-lg font-bold">
@@ -187,32 +218,8 @@ function StudyPlanPageContent() {
           <PhaseTimeline phases={plan.phases} courseOrder={order} />
         </div>
       </section>
-
-      <section aria-labelledby="schedule-heading" className="space-y-4">
-        <h2 id="schedule-heading" className="text-xl font-bold">
-          Upcoming
-        </h2>
-        {past.length > 0 && (
-          <button
-            type="button"
-            className="text-sm font-bold text-blue hover:text-blue-deep"
-            aria-expanded={showPast}
-            onClick={() => setShowPast((current) => !current)}
-          >
-            {showPast ? "Hide" : "Show"} earlier days ({past.length})
-          </button>
-        )}
-        {[...(showPast ? past : []), ...upcoming].map((day) => (
-          <div key={day.date}>
-            <h3 className={`mb-2 text-sm font-bold ${day.date < plan.today ? "text-ink-soft" : ""}`}>{formatPlanDate(day.date)}</h3>
-            <ul className="space-y-2">
-              {day.tasks.map((task) => (
-                <PlanTaskItem key={task.id} task={task} onToggle={toggle} />
-              ))}
-            </ul>
-          </div>
-        ))}
-      </section>
+      </aside>
+      </div>
     </div>
   );
 }
