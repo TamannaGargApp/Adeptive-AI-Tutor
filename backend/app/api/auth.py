@@ -18,7 +18,8 @@ def _set_auth_cookie(response: Response, user_id: str) -> None:
         value=create_access_token(user_id),
         httponly=True,
         secure=settings.cookie_secure,
-        samesite="lax",
+        # samesite="lax",
+        samesite="none",
         max_age=settings.jwt_access_token_expire_minutes * 60,
         path="/",
     )
