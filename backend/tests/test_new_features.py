@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from app.core.config import get_settings
 from app.schemas.feedback import FeedbackArea, FeedbackResponse
 from app.schemas.tutor import QuestionResponse
+from app.db.seed import COURSES
 
 CODE_EXERCISE = QuestionResponse(
     question_type="write_code",
@@ -82,7 +83,9 @@ async def test_admin_can_manage_content(auth_client, monkeypatch):
 
     stats = (await auth_client.get("/api/admin/stats")).json()
     assert stats["users"] == 1
-    assert {course["slug"] for course in stats["courses"]} == {"python", "javascript"}
+
+    # Every built-in course is listed, whichever courses the seed contains.
+    assert {course["slug"] for course in stats["courses"]} == {course["slug"] for course in COURSES}
     assert (await auth_client.get("/api/admin/users")).json()[0]["email"] == "ada@example.com"
 
     created = await auth_client.post(
