@@ -610,7 +610,7 @@ Things to keep in mind:
   `localhost` or the published port `27021`.
 - **The browser reaches the API at its published address.** The frontend is built with
   `NEXT_PUBLIC_API_URL=http://localhost:8002`, and `CORS_ORIGINS` must list the exact address you open
-  the app at, for example `http://localhost:3003,http://127.0.0.1:3003`.
+  the app at, for example `http://localhost:3003, http://127.0.0.1:3003`.
 - **Changing ports** means updating the `ports` mappings, `CORS_ORIGINS` and the `NEXT_PUBLIC_API_URL`
   build argument together. `NEXT_PUBLIC_API_URL` is baked in at build time, so rebuild the frontend:
   `docker compose up --build -d frontend`.
@@ -697,21 +697,6 @@ Frontend type check:
 cd frontend
 npm run typecheck
 ```
-
-## Troubleshooting
-
-- **"Can't reach the server"** in the browser: the backend isn't running, `NEXT_PUBLIC_API_URL` is wrong,
-  or (with Docker) `CORS_ORIGINS` doesn't match the address in your browser exactly, including the port.
-- **Logged out immediately after logging in**: open the app at `http://localhost:3000`, not `127.0.0.1`.
-- **Backend fails with `JWT_SECRET_KEY` error**: set a secret of at least 32 characters in `backend/.env`.
-- **Backend fails with `ServerSelectionTimeoutError`**: MongoDB isn't running at `MONGODB_URI`. In Docker,
-  use `mongodb://mongo:27017`, not `localhost` or the published port.
-- **The first code run takes a few seconds**: Python and any libraries the code uses (Pandas is about
-  10 MB) download once, then are cached by the browser.
-- **"The AI tutor is not configured yet"**: add `GEMINI_API_KEY` to `backend/.env` and restart.
-- **Gemini 404 / model not found**: set `GEMINI_MODEL` to a current model name from Google AI Studio.
-- **`Gemini error 503` warnings in the log**: the main model is overloaded on Google's side. The app
-  switches to `GEMINI_FALLBACK_MODEL` and skips the busy model for 60 seconds, so no action is needed.
 
 ## Future enhancements
 
